@@ -79,6 +79,10 @@ final-*.php
 # Legacy folder (contains secrets)
 Legacy-Folder/
 
+# But allow example/template files
+!Legacy-Folder/**/appsettings.example.json
+!Legacy-Folder/**/README-CONFIG.md
+
 # Backup files
 *.bak
 *.backup
