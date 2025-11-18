@@ -1,0 +1,40 @@
+.employee-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 3px;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+    margin: 5px 0;
+}
+
+.employee-card:hover {
+    transform: scale(1.01);
+    background-color: #f1f1f1;  
+}
+
+.employee-pic {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    margin-right: 10px;
+}
+
+.employee-info {
+    flex-grow: 1;
+    font-size: 10.5px;
+}
+
+.employee-name {
+    font-weight: bold;
+    display: block;
+}
+
+.employee-birthday {
+    color: #888;
+}
+
+.birthday-icon {
+    width: 24px;
+    height: 24px;
+}

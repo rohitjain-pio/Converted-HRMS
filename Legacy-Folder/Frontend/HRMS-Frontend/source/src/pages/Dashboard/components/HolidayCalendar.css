@@ -1,0 +1,16 @@
+.table-row {
+    transition: background-color 0.3s;  
+}
+
+.table-row:hover {
+    background-color: #f1f1f1;  
+}
+
+.table-cell {
+    font-size: 11px; 
+}
+
+.table-header-cell {
+    font-weight: bold;
+    font-size: 10.5px; 
+}

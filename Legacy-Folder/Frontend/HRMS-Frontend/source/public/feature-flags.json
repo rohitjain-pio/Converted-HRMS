@@ -1,0 +1,12 @@
+{
+    "version": "1.3.0",
+    "flags": {
+        "enableExitEmployee": true,
+        "enableAttendance": true,
+        "enableLeave": false,
+        "enableITAsset": false,
+        "enableKPI": false,
+        "enableGrievance": false,
+        "enableChatbot": false
+    }
+}

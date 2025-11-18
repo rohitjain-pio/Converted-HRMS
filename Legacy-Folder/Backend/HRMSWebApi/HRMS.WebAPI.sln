@@ -1,0 +1,55 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.10.35013.160
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HRMS.API", "HRMS.API\HRMS.API.csproj", "{DB8CA278-15B5-40F1-9FAD-15442726A8DD}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HRMS.Application", "HRMS.Application\HRMS.Application.csproj", "{B4F82629-5E46-46D7-AAB0-1CEFF244219F}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HRMS.Domain", "HRMS.Domain\HRMS.Domain.csproj", "{EC703A99-4664-4611-87CA-97F2A4F130CC}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HRMS.Infrastructure", "HRMS.Infrastructure\HRMS.Infrastructure.csproj", "{5F11562D-6179-4769-9AC2-2B05397E6788}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "HRMS.Models", "HRMS.Models\HRMS.Models.csproj", "{2CC8EC28-D688-4B2E-AE5D-11979B7FA045}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "HRMS.DownTownDataSync", "HRMS.DownTownDataSync\HRMS.DownTownDataSync.csproj", "{23375851-8E67-4ED4-A90B-7F46A04ECE62}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{DB8CA278-15B5-40F1-9FAD-15442726A8DD}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{DB8CA278-15B5-40F1-9FAD-15442726A8DD}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{DB8CA278-15B5-40F1-9FAD-15442726A8DD}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{DB8CA278-15B5-40F1-9FAD-15442726A8DD}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B4F82629-5E46-46D7-AAB0-1CEFF244219F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B4F82629-5E46-46D7-AAB0-1CEFF244219F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B4F82629-5E46-46D7-AAB0-1CEFF244219F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B4F82629-5E46-46D7-AAB0-1CEFF244219F}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EC703A99-4664-4611-87CA-97F2A4F130CC}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EC703A99-4664-4611-87CA-97F2A4F130CC}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EC703A99-4664-4611-87CA-97F2A4F130CC}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EC703A99-4664-4611-87CA-97F2A4F130CC}.Release|Any CPU.Build.0 = Release|Any CPU
+		{5F11562D-6179-4769-9AC2-2B05397E6788}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{5F11562D-6179-4769-9AC2-2B05397E6788}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{5F11562D-6179-4769-9AC2-2B05397E6788}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{5F11562D-6179-4769-9AC2-2B05397E6788}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2CC8EC28-D688-4B2E-AE5D-11979B7FA045}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2CC8EC28-D688-4B2E-AE5D-11979B7FA045}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2CC8EC28-D688-4B2E-AE5D-11979B7FA045}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2CC8EC28-D688-4B2E-AE5D-11979B7FA045}.Release|Any CPU.Build.0 = Release|Any CPU
+		{23375851-8E67-4ED4-A90B-7F46A04ECE62}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{23375851-8E67-4ED4-A90B-7F46A04ECE62}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{23375851-8E67-4ED4-A90B-7F46A04ECE62}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{23375851-8E67-4ED4-A90B-7F46A04ECE62}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {90E61D26-D787-4599-B0AD-63CA7F6CF465}
+	EndGlobalSection
+EndGlobal

@@ -1,0 +1,97 @@
+trigger:
+   - none
+
+pool:
+  vmImage: 'windows-latest'  # Using the latest Windows-based build agent
+
+variables:
+  - group: HRMS-VG
+
+steps:
+- task: UseDotNet@2
+  inputs:
+    packageType: 'sdk'
+    version: '8.x'
+    installationPath: $(Agent.ToolsDirectory)/dotnet
+
+- task: SonarQubePrepare@7
+  inputs:
+    SonarQube: '$(sonarQubeServiceConnection)'
+    scannerMode: 'dotnet'
+    projectKey: '$(sonarQubeProjectKey)'
+    projectName: '$(sonarQubeProjectName)'
+    extraProperties: 'sonar.host.url=$(sonarQubeUrl)'
+
+- task: DotNetCoreCLI@2
+  inputs:
+    command: 'build'
+    projects: '**/*.csproj'
+
+- task: SonarQubeAnalyze@7
+  inputs:
+    jdkversion: 'JAVA_HOME_21_X64'
+
+- task: SonarQubePublish@7
+  inputs:
+    pollingTimeoutSec: '300'
+- powershell: |
+   # Define Variables
+   $projectKey = '$(sonarQubeProjectKey)'
+   $sonarHost = '$(sonarQubeUrl)'
+   $sonarToken = "squ_75703adfe8fe172f9875b9c28e171e8d505a857d" # Add Project Token
+   
+   # Construct API URL
+   $apiUrl = "$sonarHost/api/qualitygates/project_status?projectKey=$projectKey"
+   
+   # Encode authentication token
+   $encodedAuth = [Convert]::ToBase64String([Text.Encoding]::ASCII.GetBytes("${sonarToken}:"))
+   
+   # Set Headers
+   $headers = @{
+       Authorization = "Basic $encodedAuth"
+       "Content-Type" = "application/json"
+   }
+   
+   # Invoke API Request
+   try {
+       $response = Invoke-RestMethod -Uri $apiUrl -Headers $headers -Method Get
+       $status = $response.projectStatus.status
+   
+       Write-Host "Quality Gate Status: $status"
+   
+       # Check Quality Gate Result
+       if ($status -ne "OK") {
+           Write-Host "##vso[task.logissue type=error]Quality Gate Failed!"
+           Write-Host "##vso[task.complete result=Failed;]DONE"
+           exit 1  # Fail the task
+       } else {
+           Write-Host "Quality Gate Passed."
+       }
+   } catch {
+       Write-Host "##vso[task.logissue type=error]Error: $($_.Exception.Message)"
+       Write-Host "##vso[task.complete result=Failed;]DONE"
+       exit 1
+   }
+  displayName: 'PowerShell Script'
+
+
+- task: SendEmail@1
+  inputs:
+    To: 'test.rathore@programmers.io' #Add Project Owner’s Mail ID
+    From: 'Sonar.Status@programmers.io'
+    Subject: 'SonarQube Status'
+    Body: |
+      Hello,<br>
+      
+      You can check latest SonarQube report here: 
+       http://74.235.209.73:9000/tutorials?id=test <br> #Add Project Report Link
+      
+      Thanks,<br>
+      Sonar
+    BodyAsHtml: true
+    AddAttachment: false
+    SmtpServer: 'smtp.office365.com'
+    SmtpUsername: 'Sonar.Status@programmers.io'
+    SmtpPassword: 'bcyvlvrbmppkfxcp'
+  continueOnError: true
+  condition: failed()

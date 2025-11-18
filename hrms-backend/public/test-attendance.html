@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Attendance API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+<body>
+    <h1>Attendance API Tester</h1>
+    
+    <div class="test-section">
+        <h2>1. Login</h2>
+        <button onclick="testLogin()">Test Login</button>
+        <div id="loginResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Get Attendance</h2>
+        <button onclick="testGetAttendance()">Get Attendance</button>
+        <div id="attendanceResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>3. Time In</h2>
+        <button onclick="testTimeIn()">Test Time In</button>
+        <div id="timeInResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>4. Time Out</h2>
+        <button onclick="testTimeOut()">Test Time Out</button>
+        <div id="timeOutResult"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        const API_KEY = 'hrms-secure-api-key-change-in-production';
+        let authToken = null;
+        let employeeId = null;
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('loginResult');
+            resultDiv.innerHTML = '<p class="info">Testing login...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'X-API-Key': API_KEY,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@company.com',
+                        password: 'password'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.data.token) {
+                    authToken = data.data.token;
+                    employeeId = data.data.employee_id;
+                    resultDiv.innerHTML = `
+                        <p class="success">✓ Login successful!</p>
+                        <p>Employee ID: ${employeeId}</p>
+                        <p>Token: ${authToken.substring(0, 20)}...</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ Login failed</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testGetAttendance() {
+            const resultDiv = document.getElementById('attendanceResult');
+            
+            if (!authToken || !employeeId) {
+                resultDiv.innerHTML = '<p class="error">❌ Please login first</p>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<p class="info">Fetching attendance...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/attendance/get-attendance/${employeeId}?pageIndex=0&pageSize=10`, {
+                    method: 'GET',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    const hasAttendaceReport = !!data.data.attendaceReport;
+                    const hasIsTimedIn = data.data.hasOwnProperty('isTimedIn');
+                    const hasDates = !!data.data.dates;
+                    
+                    resultDiv.innerHTML = `
+                        <p class="success">✓ API call successful!</p>
+                        <h3>Response Structure Validation:</h3>
+                        <p>${hasAttendaceReport ? '✓' : '❌'} attendaceReport field (with typo): ${hasAttendaceReport ? 'Present' : 'Missing'}</p>
+                        <p>${hasIsTimedIn ? '✓' : '❌'} isTimedIn field: ${hasIsTimedIn ? 'Present' : 'Missing'} ${hasIsTimedIn ? '(Value: ' + data.data.isTimedIn + ')' : ''}</p>
+                        <p>${hasDates ? '✓' : '❌'} dates field: ${hasDates ? 'Present' : 'Missing'} ${hasDates ? '(Count: ' + data.data.dates.length + ')' : ''}</p>
+                        <p>Total Records: ${data.data.totalRecords}</p>
+                        <p>Is Manual Attendance: ${data.data.isManualAttendance}</p>
+                        <h3>Full Response:</h3>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ Request failed</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testTimeIn() {
+            const resultDiv = document.getElementById('timeInResult');
+            
+            if (!authToken || !employeeId) {
+                resultDiv.innerHTML = '<p class="error">❌ Please login first</p>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<p class="info">Testing time in...</p>';
+            
+            const now = new Date();
+            const today = now.toISOString().split('T')[0];
+            const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
+            
+            try {
+                const response = await fetch(`${API_BASE}/attendance/add-attendance/${employeeId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        date: today,
+                        startTime: currentTime,
+                        location: 'Office',
+                        audit: [{
+                            action: 'Time In',
+                            time: currentTime,
+                            comment: 'Test time in'
+                        }]
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✓ Time in successful!</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ Time in failed</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testTimeOut() {
+            const resultDiv = document.getElementById('timeOutResult');
+            
+            if (!authToken || !employeeId) {
+                resultDiv.innerHTML = '<p class="error">❌ Please login first</p>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<p class="info">Testing time out...</p>';
+            
+            // First, get today's attendance to find the ID
+            try {
+                const getResponse = await fetch(`${API_BASE}/attendance/get-attendance/${employeeId}?pageIndex=0&pageSize=10`, {
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const getData = await getResponse.json();
+                const today = new Date().toISOString().split('T')[0];
+                const todayRecord = getData.data.attendaceReport?.find(r => r.date === today);
+                
+                if (!todayRecord) {
+                    resultDiv.innerHTML = '<p class="error">❌ No attendance record found for today. Please Time In first.</p>';
+                    return;
+                }
+                
+                const now = new Date();
+                const currentTime = now.toTimeString().split(' ')[0].substring(0, 5);
+                
+                const response = await fetch(`${API_BASE}/attendance/update-attendance/${employeeId}/${todayRecord.id}`, {
+                    method: 'PUT',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        date: today,
+                        endTime: currentTime,
+                        audit: [{
+                            action: 'Time Out',
+                            time: currentTime
+                        }]
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    resultDiv.innerHTML = `
+                        <p class="success">✓ Time out successful!</p>
+                        <pre>${JSON.stringify(data, null, 2)}</pre>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ Time out failed</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

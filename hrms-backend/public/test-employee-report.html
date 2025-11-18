@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee Report API Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1400px;
+            margin: 50px auto;
+            padding: 20px;
+        }
+        .test-section {
+            border: 1px solid #ddd;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+        .success { color: green; }
+        .error { color: red; }
+        .info { color: blue; }
+        button {
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 4px;
+        }
+        button:hover {
+            background-color: #0056b3;
+        }
+        pre {
+            background-color: #f5f5f5;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            max-height: 500px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #1E75BB;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <h1>Employee Report API Tester</h1>
+    
+    <div class="test-section">
+        <h2>1. Login</h2>
+        <button onclick="testLogin()">Test Login</button>
+        <div id="loginResult"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>2. Get Employee Report</h2>
+        <button onclick="testGetEmployeeReport()">Get Employee Report</button>
+        <div id="employeeReportResult"></div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        const API_KEY = 'hrms-secure-api-key-change-in-production';
+        let authToken = null;
+        let employeeId = null;
+
+        async function testLogin() {
+            const resultDiv = document.getElementById('loginResult');
+            resultDiv.innerHTML = '<p class="info">Testing login...</p>';
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: {
+                        'X-API-Key': API_KEY,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        email: 'admin@company.com',
+                        password: 'password'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.data.token) {
+                    authToken = data.data.token;
+                    employeeId = data.data.employee_id;
+                    resultDiv.innerHTML = `
+                        <p class="success">✓ Login successful!</p>
+                        <p>Employee ID: ${employeeId}</p>
+                        <p>Token: ${authToken.substring(0, 20)}...</p>
+                    `;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ Login failed</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+
+        async function testGetEmployeeReport() {
+            const resultDiv = document.getElementById('employeeReportResult');
+            
+            if (!authToken) {
+                resultDiv.innerHTML = '<p class="error">❌ Please login first</p>';
+                return;
+            }
+            
+            resultDiv.innerHTML = '<p class="info">Fetching employee report...</p>';
+            
+            // Get date range (last 7 days)
+            const today = new Date();
+            const lastWeek = new Date();
+            lastWeek.setDate(today.getDate() - 7);
+            
+            const dateFrom = lastWeek.toISOString().split('T')[0];
+            const dateTo = today.toISOString().split('T')[0];
+            
+            try {
+                const response = await fetch(`${API_BASE}/attendance/get-employee-report`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authToken}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        pageIndex: 0,
+                        pageSize: 10,
+                        dateFrom: dateFrom,
+                        dateTo: dateTo
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    const hasEmployeeReports = !!data.data.employeeReports;
+                    const hasTotalRecords = data.data.hasOwnProperty('totalRecords');
+                    
+                    let html = `
+                        <p class="success">✓ API call successful!</p>
+                        <h3>Response Structure Validation:</h3>
+                        <p>${hasEmployeeReports ? '✓' : '❌'} employeeReports field: ${hasEmployeeReports ? 'Present' : 'Missing'}</p>
+                        <p>${hasTotalRecords ? '✓' : '❌'} totalRecords field: ${hasTotalRecords ? 'Present' : 'Missing'} ${hasTotalRecords ? '(Value: ' + data.data.totalRecords + ')' : ''}</p>
+                        <p>Date Range: ${dateFrom} to ${dateTo}</p>
+                    `;
+                    
+                    if (hasEmployeeReports && data.data.employeeReports.length > 0) {
+                        html += '<h3>Employee Report Data:</h3>';
+                        html += '<table>';
+                        html += '<thead><tr><th>Employee Code</th><th>Employee Name</th><th>Department</th><th>Branch</th><th>Total Hours</th><th>Dates with Data</th></tr></thead>';
+                        html += '<tbody>';
+                        
+                        data.data.employeeReports.forEach(emp => {
+                            const datesCount = Object.keys(emp.workedHoursByDate || {}).length;
+                            html += `
+                                <tr>
+                                    <td>${emp.employeeCode}</td>
+                                    <td>${emp.employeeName}</td>
+                                    <td>${emp.department || 'N/A'}</td>
+                                    <td>${emp.branch || 'N/A'}</td>
+                                    <td>${emp.totalHour || '0:00'}</td>
+                                    <td>${datesCount} days</td>
+                                </tr>
+                            `;
+                        });
+                        
+                        html += '</tbody></table>';
+                        
+                        // Show first employee's detailed data
+                        if (data.data.employeeReports.length > 0) {
+                            const firstEmp = data.data.employeeReports[0];
+                            html += '<h3>First Employee Details:</h3>';
+                            html += '<pre>' + JSON.stringify(firstEmp, null, 2) + '</pre>';
+                        }
+                    } else {
+                        html += '<p class="info">No employee records found</p>';
+                    }
+                    
+                    html += '<h3>Full Response:</h3>';
+                    html += '<pre>' + JSON.stringify(data, null, 2) + '</pre>';
+                    
+                    resultDiv.innerHTML = html;
+                } else {
+                    resultDiv.innerHTML = `<p class="error">❌ Request failed</p><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

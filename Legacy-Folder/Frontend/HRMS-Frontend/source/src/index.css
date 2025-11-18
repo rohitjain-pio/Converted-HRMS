@@ -1,0 +1,172 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:ital,wght@0,100..900;1,100..900&display=swap');
+
+body {
+  background-color: white !important;
+  font-family: "Roboto", sans-serif !important;
+}
+
+/* :root {
+  font-family: Inter, system-ui, Avenir, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
+  font-weight: 400;
+
+  color-scheme: light dark;
+  color: rgba(178, 115, 115, 0.87);
+  background-color: #242424;
+
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+a {
+  font-weight: 500;
+  color: #646cff;
+  text-decoration: inherit;
+}
+a:hover {
+  color: #535bf2;
+}
+
+body {
+ 
+}
+
+h1 {
+  font-size: 3.2em;
+  line-height: 1.1;
+}
+
+button {
+  border-radius: 8px;
+  border: 1px solid transparent;
+  padding: 0.6em 1.2em;
+  font-size: 1em;
+  font-weight: 500;
+  font-family: inherit;
+  background-color: #1a1a1a;
+  cursor: pointer;
+  transition: border-color 0.25s;
+}
+button:hover {
+  border-color: #646cff;
+}
+button:focus,
+button:focus-visible {
+  outline: 4px auto -webkit-focus-ring-color;
+}
+
+@media (prefers-color-scheme: light) {
+  :root {
+    color: #213547;
+    background-color: #ffffff;
+  }
+  a:hover {
+    color: #747bff;
+  }
+  button {
+    background-color: #f9f9f9;
+  }
+} */
+
+.blueColor {
+  color: #1e75bb;
+  font-weight: 600;
+}
+
+.login-center-icon-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.dark-color {
+  color: #283a50;
+}
+
+.font-width-700 {
+  font-weight: 40px;
+}
+
+.login-container {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  align-items: center;
+  text-align: center;
+}
+
+.login-center-icon {
+  background-color: #283a50;
+  width: 70px;
+  height: 70px;
+  align-items: center;
+  justify-content: center;
+  display: flex;
+  border-radius: 50%;
+  box-shadow: 0px 1px 8px 0px;
+}
+
+.bottom-header-icon {
+  background-image: url('/assets//images/icons/header-cloud-light.png');
+  background-repeat: no-repeat;
+  background-position: center bottom;
+}
+
+.login-button {
+  border-color: #1e75bb;
+  color: #1e75bb;
+}
+
+.login-button:hover {
+  background-color: #1e75bb;
+  border-color: #1e75bb;
+  color: white;
+}
+
+.login-button-image:hover {
+  fill: white;
+}
+
+@media screen and (max-width: 768px) {
+  .login-sidebar-image {
+    display: none;
+  }
+  .login-divider {
+    display: none;
+  }
+  .login-main-container-card {
+    justify-content: center;
+    align-items: center;
+  }
+}
+
+.side-image {
+  top: 424px;
+  left: 583px;
+  width: 258px;
+  height: 180px;
+
+  background: transparent
+    url('img/computer-security-with-login-password-padlock.png') 0% 0% no-repeat
+    padding-box;
+  opacity: 0.8;
+}
+
+.dashboard-upcoming .MuiTable-root {
+  min-width: auto;
+}
+
+.dashboard-upcoming .MuiTableCell-root, .dashboard-upcoming .MuiTypography-root {
+  font-size: 0.75rem;
+}
+
+.dashboard-upcoming .MuiTableCell-head {
+  padding: 6px 12px;
+}
+
+.dashboard-upcoming .MuiTableCell-body {
+  padding: 10px 10px !important;
+}

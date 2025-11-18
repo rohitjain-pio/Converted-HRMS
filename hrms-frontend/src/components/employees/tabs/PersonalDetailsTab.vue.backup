@@ -1,0 +1,491 @@
+<template>
+  <div class="personal-details-tab">
+    <v-row>
+      <!-- Personal Information Section -->
+      <v-col cols="12">
+        <v-card>
+          <v-card-title class="section-title">
+            <div class="d-flex justify-space-between align-center">
+              <span>Personal Information</span>
+              <v-btn
+                v-if="canEdit && !editMode"
+                icon="mdi-pencil"
+                size="small"
+                @click="editMode = true"
+              />
+            </div>
+          </v-card-title>
+          <v-card-text>
+            <v-form v-if="editMode" ref="personalForm">
+              <v-row>
+                <v-col cols="12" md="4">
+                  <v-text-field
+                    v-model="editedEmployee.first_name"
+                    label="First Name *"
+                    :rules="[rules.required]"
+                  />
+                </v-col>
+                <v-col cols="12" md="4">
+                  <v-text-field
+                    v-model="editedEmployee.middle_name"
+                    label="Middle Name"
+                  />
+                </v-col>
+                <v-col cols="12" md="4">
+                  <v-text-field
+                    v-model="editedEmployee.last_name"
+                    label="Last Name *"
+                    :rules="[rules.required]"
+                  />
+                </v-col>
+              </v-row>
+
+              <v-row>
+                <v-col cols="12" md="4">
+                  <v-text-field
+                    v-model="editedEmployee.father_name"
+                    label="Father's Name *"
+                    :rules="[rules.required]"
+                  />
+                </v-col>
+                <v-col cols="12" md="4">
+                  <v-text-field
+                    v-model="editedEmployee.dob"
+                    label="Date of Birth *"
+                    type="date"
+                    :rules="[rules.required]"
+                  />
+                </v-col>
+                <v-col cols="12" md="4">
+                  <v-select
+                    v-model="editedEmployee.gender"
+                    label="Gender *"
+                    :items="genderOptions"
+                    item-title="label"
+                    item-value="value"
+                    :rules="[rules.required]"
+                  />
+                </v-col>
+              </v-row>
+
+              <v-row>
+                <v-col cols="12" md="4">
+                  <v-select
+                    v-model="editedEmployee.blood_group"
+                    label="Blood Group"
+                    :items="bloodGroups"
+                  />
+                </v-col>
+                <v-col cols="12" md="4">
+                  <v-select
+                    v-model="editedEmployee.marital_status"
+                    label="Marital Status *"
+                    :items="maritalStatusOptions"
+                    item-title="label"
+                    item-value="value"
+                    :rules="[rules.required]"
+                  />
+                </v-col>
+                <v-col cols="12" md="4">
+                  <v-text-field
+                    v-model="editedEmployee.nationality"
+                    label="Nationality *"
+                    :rules="[rules.required]"
+                  />
+                </v-col>
+              </v-row>
+
+              <v-row>
+                <v-col cols="12" md="4">
+                  <v-text-field
+                    v-model="editedEmployee.phone"
+                    label="Phone Number *"
+                    :rules="[rules.required, rules.phone]"
+                  />
+                </v-col>
+                <v-col cols="12" md="4">
+                  <v-text-field
+                    v-model="editedEmployee.alternate_phone"
+                    label="Alternate Phone"
+                    :rules="[rules.phone]"
+                  />
+                </v-col>
+                <v-col cols="12" md="4">
+                  <v-text-field
+                    v-model="editedEmployee.personal_email"
+                    label="Personal Email *"
+                    :rules="[rules.required, rules.email]"
+                  />
+                </v-col>
+              </v-row>
+
+              <v-row>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="editedEmployee.emergency_contact_person"
+                    label="Emergency Contact Person *"
+                    :rules="[rules.required]"
+                  />
+                </v-col>
+                <v-col cols="12" md="6">
+                  <v-text-field
+                    v-model="editedEmployee.emergency_contact_no"
+                    label="Emergency Contact Number *"
+                    :rules="[rules.required, rules.phone]"
+                  />
+                </v-col>
+              </v-row>
+
+              <v-row>
+                <v-col cols="12">
+                  <v-textarea
+                    v-model="editedEmployee.interest"
+                    label="Interests"
+                    rows="3"
+                  />
+                </v-col>
+              </v-row>
+
+              <v-row>
+                <v-col cols="12">
+                  <v-btn color="primary" @click="savePersonalDetails" :loading="saving">
+                    Save
+                  </v-btn>
+                  <v-btn class="ml-2" @click="cancelEdit">Cancel</v-btn>
+                </v-col>
+              </v-row>
+            </v-form>
+
+            <v-row v-else>
+              <v-col cols="12" md="4">
+                <div class="info-field">
+                  <label>Full Name</label>
+                  <div>{{ getFullName }}</div>
+                </div>
+              </v-col>
+              <v-col cols="12" md="4">
+                <div class="info-field">
+                  <label>Father's Name</label>
+                  <div>{{ employee?.father_name || 'N/A' }}</div>
+                </div>
+              </v-col>
+              <v-col cols="12" md="4">
+                <div class="info-field">
+                  <label>Date of Birth</label>
+                  <div>{{ formatDate(employee?.dob) || 'N/A' }}</div>
+                </div>
+              </v-col>
+              <v-col cols="12" md="4">
+                <div class="info-field">
+                  <label>Gender</label>
+                  <div>{{ getGenderName(employee?.gender) }}</div>
+                </div>
+              </v-col>
+              <v-col cols="12" md="4">
+                <div class="info-field">
+                  <label>Blood Group</label>
+                  <div>{{ employee?.blood_group || 'N/A' }}</div>
+                </div>
+              </v-col>
+              <v-col cols="12" md="4">
+                <div class="info-field">
+                  <label>Marital Status</label>
+                  <div>{{ getMaritalStatus(employee?.marital_status) }}</div>
+                </div>
+              </v-col>
+              <v-col cols="12" md="4">
+                <div class="info-field">
+                  <label>Nationality</label>
+                  <div>{{ employee?.nationality || 'N/A' }}</div>
+                </div>
+              </v-col>
+              <v-col cols="12" md="4">
+                <div class="info-field">
+                  <label>Phone Number</label>
+                  <div>{{ employee?.phone || 'N/A' }}</div>
+                </div>
+              </v-col>
+              <v-col cols="12" md="4">
+                <div class="info-field">
+                  <label>Alternate Phone</label>
+                  <div>{{ employee?.alternate_phone || 'N/A' }}</div>
+                </div>
+              </v-col>
+              <v-col cols="12" md="4">
+                <div class="info-field">
+                  <label>Personal Email</label>
+                  <div>{{ employee?.personal_email || 'N/A' }}</div>
+                </div>
+              </v-col>
+              <v-col cols="12" md="6">
+                <div class="info-field">
+                  <label>Emergency Contact Person</label>
+                  <div>{{ employee?.emergency_contact_person || 'N/A' }}</div>
+                </div>
+              </v-col>
+              <v-col cols="12" md="6">
+                <div class="info-field">
+                  <label>Emergency Contact Number</label>
+                  <div>{{ employee?.emergency_contact_no || 'N/A' }}</div>
+                </div>
+              </v-col>
+              <v-col v-if="employee?.interest" cols="12">
+                <div class="info-field">
+                  <label>Interests</label>
+                  <div>{{ employee.interest }}</div>
+                </div>
+              </v-col>
+            </v-row>
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <!-- Address Information -->
+      <v-col cols="12" md="6">
+        <v-card>
+          <v-card-title class="section-title">Current Address</v-card-title>
+          <v-card-text>
+            <AddressForm
+              v-if="employee?.id"
+              :employee-id="employee.id"
+              :address-type="1"
+              :existing-address="currentAddress"
+              :editable="canEdit"
+              @saved="$emit('refresh')"
+            />
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <v-col cols="12" md="6">
+        <v-card>
+          <v-card-title class="section-title">
+            <div class="d-flex justify-space-between align-center">
+              <span>Permanent Address</span>
+              <v-btn
+                v-if="canEdit && currentAddress"
+                size="small"
+                variant="text"
+                @click="copyCurrentToPermanent"
+              >
+                Copy from Current
+              </v-btn>
+            </div>
+          </v-card-title>
+          <v-card-text>
+            <AddressForm
+              v-if="employee?.id"
+              :employee-id="employee.id"
+              :address-type="2"
+              :existing-address="permanentAddress"
+              :editable="canEdit"
+              @saved="$emit('refresh')"
+            />
+          </v-card-text>
+        </v-card>
+      </v-col>
+
+      <!-- Documents Section -->
+      <v-col cols="12">
+        <v-card>
+          <v-card-title class="section-title">Documents</v-card-title>
+          <v-card-text>
+            <DocumentUpload
+              v-if="employee?.id"
+              :employee-id="employee.id"
+              @refresh="$emit('refresh')"
+            />
+          </v-card-text>
+        </v-card>
+      </v-col>
+    </v-row>
+  </div>
+</template>
+
+<script setup lang="ts">
+import { ref, computed, watch } from 'vue';
+import type { Employee, Address } from '@/types/employee';
+import { useEmployeeStore } from '@/stores/employeeStore';
+import AddressForm from '../AddressForm.vue';
+import DocumentUpload from '../DocumentUpload.vue';
+
+const props = defineProps<{
+  employee: Employee | null;
+  currentAddress: Address | null;
+  permanentAddress: Address | null;
+  canEdit: boolean;
+}>();
+
+const emit = defineEmits<{
+  (e: 'refresh'): void;
+}>();
+
+const employeeStore = useEmployeeStore();
+
+const editMode = ref(false);
+const editedEmployee = ref<Partial<Employee>>({});
+const saving = ref(false);
+const personalForm = ref<any>(null);
+
+const genderOptions = [
+  { label: 'Male', value: 1 },
+  { label: 'Female', value: 2 },
+  { label: 'Other', value: 3 }
+];
+
+const maritalStatusOptions = [
+  { label: 'Single', value: 1 },
+  { label: 'Married', value: 2 },
+  { label: 'Divorced', value: 3 },
+  { label: 'Widowed', value: 4 }
+];
+
+const bloodGroups = ['A+', 'A-', 'B+', 'B-', 'AB+', 'AB-', 'O+', 'O-'];
+
+const rules = {
+  required: (v: any) => !!v || 'This field is required',
+  email: (v: string) => !v || /.+@.+\..+/.test(v) || 'Invalid email',
+  phone: (v: string) => !v || /^\+?[\d\s-]+$/.test(v) || 'Invalid phone number'
+};
+
+const getFullName = computed(() => {
+  if (!props.employee) return 'N/A';
+  const parts = [props.employee.first_name, props.employee.middle_name, props.employee.last_name].filter(Boolean);
+  return parts.join(' ');
+});
+
+watch(() => props.employee, (newVal) => {
+  if (newVal) {
+    editedEmployee.value = { ...newVal };
+  }
+}, { immediate: true });
+
+function formatDate(dateString?: string): string {
+  if (!dateString) return '';
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-IN', {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric'
+  });
+}
+
+function getGenderName(gender?: number): string {
+  const genderMap: Record<number, string> = {
+    1: 'Male',
+    2: 'Female',
+    3: 'Other'
+  };
+  return gender ? genderMap[gender] : 'N/A';
+}
+
+function getMaritalStatus(status?: number): string {
+  const statusMap: Record<number, string> = {
+    1: 'Single',
+    2: 'Married',
+    3: 'Divorced',
+    4: 'Widowed'
+  };
+  return status ? statusMap[status] : 'N/A';
+}
+
+async function savePersonalDetails() {
+  if (!props.employee?.id) return;
+  
+  // Validate form first
+  const form = personalForm.value as any;
+  if (form) {
+    const { valid } = await form.validate();
+    if (!valid) {
+      return;
+    }
+  }
+  
+  saving.value = true;
+  try {
+    // Prepare update payload
+    const updateData = {
+      first_name: editedEmployee.value.first_name,
+      middle_name: editedEmployee.value.middle_name,
+      last_name: editedEmployee.value.last_name,
+      father_name: editedEmployee.value.father_name,
+      gender: editedEmployee.value.gender,
+      dob: editedEmployee.value.dob,
+      blood_group: editedEmployee.value.blood_group,
+      marital_status: editedEmployee.value.marital_status,
+      nationality: editedEmployee.value.nationality,
+      phone: editedEmployee.value.phone,
+      alternate_phone: editedEmployee.value.alternate_phone,
+      personal_email: editedEmployee.value.personal_email,
+      emergency_contact_person: editedEmployee.value.emergency_contact_person,
+      emergency_contact_no: editedEmployee.value.emergency_contact_no,
+      interest: editedEmployee.value.interest
+    };
+    
+    await employeeStore.updateEmployee(props.employee.id, updateData);
+    editMode.value = false;
+    emit('refresh');
+    
+    // Show success message
+    alert('Personal details updated successfully');
+  } catch (error: any) {
+    console.error('Save error:', error);
+    alert(error.response?.data?.message || error.message || 'Failed to save personal details');
+  } finally {
+    saving.value = false;
+  }
+}
+
+function cancelEdit() {
+  editMode.value = false;
+  if (props.employee) {
+    editedEmployee.value = { ...props.employee };
+  }
+}
+
+async function copyCurrentToPermanent() {
+  if (!props.employee?.id) return;
+  
+  if (confirm('Copy current address to permanent address?')) {
+    try {
+      await employeeStore.copyCurrentToPermanent(props.employee.id);
+      emit('refresh');
+    } catch (error: any) {
+      alert(error.message || 'Failed to copy address');
+    }
+  }
+}
+</script>
+
+<style scoped>
+.personal-details-tab {
+  padding: 16px 0;
+}
+
+.section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #273a50;
+  border-bottom: 2px solid #f0f0f0;
+  padding-bottom: 12px;
+  margin-bottom: 16px;
+}
+
+.info-field {
+  margin-bottom: 16px;
+}
+
+.info-field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: #999;
+  text-transform: uppercase;
+  margin-bottom: 4px;
+}
+
+.info-field div {
+  font-size: 15px;
+  color: #333;
+}
+</style>
