@@ -701,8 +701,24 @@ onMounted(async () => {
   // Load employee data if editing
   if (isEditMode.value) {
     const employeeId = Number(route.params.id);
+    console.log('Loading employee data for ID:', employeeId);
     const employee = await employeeStore.fetchEmployeeById(employeeId);
+    console.log('Fetched employee data:', employee);
+    console.log('Form data before assign:', { ...formData });
     Object.assign(formData, employee);
+    console.log('Form data after assign:', { ...formData });
+    console.log('✅ Checking YOUR specific fields that were empty:');
+    console.log('  1. DOB:', formData.dob);
+    console.log('  2. PAN Card:', formData.pan_no);
+    console.log('  3. Aadhaar Card:', formData.aadhaar_no);
+    console.log('  4. UAN:', formData.uan_no);
+    console.log('  5. Email (from employment_details):', formData.email);
+    console.log('  6. Joining Date:', formData.joining_date);
+    console.log('  7. Contact Name:', formData.emergency_contact_name);
+    console.log('  8. Contact No.:', formData.emergency_contact_number);
+    console.log('  9. Department ID:', formData.department_id);
+    console.log(' 10. Designation ID:', formData.designation_id);
+    console.log(' 11. Criminal Verification:', formData.criminal_verification, '(1=Pending, 2=Completed)');
   }
 });
 

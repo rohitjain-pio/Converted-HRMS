@@ -126,13 +126,138 @@ export const useEmployeeStore = defineStore('employee', () => {
     }
   }
 
+  /**
+   * Transform API response to form-compatible structure
+   * Maps nested employment_detail and field name mismatches
+   */
+  function transformEmployeeForForm(apiEmployee: any): any {
+    const transformed: any = {
+      // Basic employee data
+      id: apiEmployee.id,
+      employee_code: apiEmployee.employee_code,
+      first_name: apiEmployee.first_name,
+      middle_name: apiEmployee.middle_name,
+      last_name: apiEmployee.last_name,
+      father_name: apiEmployee.father_name,
+      gender: apiEmployee.gender,
+      
+      // ✅ FIX: Format DOB for date input (YYYY-MM-DD)
+      dob: apiEmployee.dob ? (apiEmployee.dob.toString().includes('T') ? apiEmployee.dob.split('T')[0] : apiEmployee.dob) : '',
+      
+      blood_group: apiEmployee.blood_group,
+      marital_status: apiEmployee.marital_status,
+      
+      // Map API field names to form field names
+      mobile_number: apiEmployee.phone, // API: phone -> Form: mobile_number
+      personal_email: apiEmployee.personal_email,
+      emergency_contact_name: apiEmployee.emergency_contact_person, // API: emergency_contact_person -> Form: emergency_contact_name
+      emergency_contact_number: apiEmployee.emergency_contact_no, // API: emergency_contact_no -> Form: emergency_contact_number
+      
+      // Government IDs
+      pan_no: apiEmployee.pan_number, // API: pan_number -> Form: pan_no
+      aadhaar_no: apiEmployee.adhar_number, // API: adhar_number -> Form: aadhaar_no
+      uan_no: apiEmployee.uan_no,
+      
+      // Other personal details
+      nationality: apiEmployee.nationality,
+      interest: apiEmployee.interest,
+      passport_no: apiEmployee.passport_no,
+      passport_expiry: apiEmployee.passport_expiry,
+      has_pf: apiEmployee.has_pf,
+      pf_number: apiEmployee.pf_number,
+      pf_date: apiEmployee.pf_date,
+      has_esi: apiEmployee.has_esi,
+      esi_no: apiEmployee.esi_no,
+      
+      // Profile picture
+      file_name: apiEmployee.file_name,
+      profile_picture_url: apiEmployee.profile_picture_url,
+    };
+    
+    // Flatten employment_detail into main object if it exists
+    if (apiEmployee.employment_detail) {
+      const empDetail = apiEmployee.employment_detail;
+      transformed.email = empDetail.email;
+      
+      // ✅ FIX: Format joining_date for date input (YYYY-MM-DD)
+      if (empDetail.joining_date) {
+        // If it's already in YYYY-MM-DD format, use it directly
+        // If it has time component, extract just the date part
+        const dateStr = empDetail.joining_date.toString();
+        transformed.joining_date = dateStr.includes('T') ? dateStr.split('T')[0] : dateStr;
+      }
+      
+      transformed.designation_id = empDetail.designation_id;
+      transformed.department_id = empDetail.department_id;
+      transformed.team_id = empDetail.team_id;
+      transformed.reporting_manager_id = empDetail.reporting_manger_id; // Note: API has typo "manger"
+      transformed.employment_status = empDetail.employment_status;
+      transformed.job_type = empDetail.job_type;
+      transformed.branch_id = empDetail.branch_id;
+      transformed.time_doctor_user_id = empDetail.time_doctor_user_id;
+      transformed.background_verificationstatus = empDetail.background_verificationstatus;
+      
+      // ✅ FIX: Convert criminal_verification from boolean to numeric dropdown value
+      // API returns: true/false, Form expects: 1=Pending, 2=Completed
+      if (empDetail.criminal_verification === null || empDetail.criminal_verification === undefined) {
+        transformed.criminal_verification = undefined;
+      } else if (empDetail.criminal_verification === true) {
+        transformed.criminal_verification = 2; // Completed
+      } else {
+        transformed.criminal_verification = 1; // Pending
+      }
+      
+      transformed.total_experience_year = empDetail.total_experience_year || 0;
+      transformed.total_experience_month = empDetail.total_experience_month || 0;
+      transformed.relevant_experience_year = empDetail.relevant_experience_year || 0;
+      transformed.relevant_experience_month = empDetail.relevant_experience_month || 0;
+      transformed.probation_months = empDetail.probation_months || 0;
+      transformed.confirmation_date = empDetail.confirmation_date;
+      transformed.role_id = empDetail.role_id;
+      transformed.linkedin_url = empDetail.linkedin_url;
+    }
+    
+    // Keep nested relationships for detail view
+    transformed.employment_detail = apiEmployee.employment_detail;
+    transformed.current_address = apiEmployee.current_address;
+    transformed.permanent_address = apiEmployee.permanent_address;
+    transformed.active_bank_details = apiEmployee.active_bank_details;
+    
+    return transformed;
+  }
+
   async function fetchEmployeeById(id: number) {
     loading.value = true;
     error.value = null;
     try {
       const response = await employeeService.getEmployeeById(id);
-      currentEmployee.value = response.data.data;
-      return response.data.data;
+      const rawEmployee = response.data.data;
+      
+      console.log('[EmployeeStore] Raw API response:', rawEmployee);
+      console.log('[EmployeeStore] Has employment_detail:', !!rawEmployee.employment_detail);
+      
+      // Transform the data for form compatibility
+      const transformedEmployee = transformEmployeeForForm(rawEmployee);
+      
+      console.log('[EmployeeStore] Transformed employee:', transformedEmployee);
+      console.log('[EmployeeStore] Checking transformations:');
+      console.log('  ✅ DOB:', rawEmployee.dob, '->', transformedEmployee.dob);
+      console.log('  ✅ phone -> mobile_number:', rawEmployee.phone, '->', transformedEmployee.mobile_number);
+      console.log('  ✅ pan_number -> pan_no:', rawEmployee.pan_number, '->', transformedEmployee.pan_no);
+      console.log('  ✅ adhar_number -> aadhaar_no:', rawEmployee.adhar_number, '->', transformedEmployee.aadhaar_no);
+      console.log('  ✅ uan_no:', rawEmployee.uan_no, '->', transformedEmployee.uan_no);
+      console.log('  ✅ emergency_contact_person -> emergency_contact_name:', rawEmployee.emergency_contact_person, '->', transformedEmployee.emergency_contact_name);
+      console.log('  ✅ emergency_contact_no -> emergency_contact_number:', rawEmployee.emergency_contact_no, '->', transformedEmployee.emergency_contact_number);
+      if (rawEmployee.employment_detail) {
+        console.log('  ✅ employment_detail.email -> email:', rawEmployee.employment_detail.email, '->', transformedEmployee.email);
+        console.log('  ✅ employment_detail.joining_date:', rawEmployee.employment_detail.joining_date, '->', transformedEmployee.joining_date);
+        console.log('  ✅ employment_detail.designation_id:', rawEmployee.employment_detail.designation_id, '->', transformedEmployee.designation_id);
+        console.log('  ✅ employment_detail.department_id:', rawEmployee.employment_detail.department_id, '->', transformedEmployee.department_id);
+        console.log('  ✅ employment_detail.criminal_verification (boolean):', rawEmployee.employment_detail.criminal_verification, '-> (number):', transformedEmployee.criminal_verification);
+      }
+      
+      currentEmployee.value = transformedEmployee;
+      return transformedEmployee;
     } catch (err: any) {
       error.value = err.message || 'Failed to fetch employee';
       throw err;
@@ -141,11 +266,81 @@ export const useEmployeeStore = defineStore('employee', () => {
     }
   }
 
+  /**
+   * Transform form data back to API-compatible structure
+   * Maps form field names to API field names
+   */
+  function transformFormDataForAPI(formData: any): any {
+    const apiData: any = {
+      // Basic employee data
+      first_name: formData.first_name,
+      middle_name: formData.middle_name,
+      last_name: formData.last_name,
+      father_name: formData.father_name,
+      gender: formData.gender,
+      dob: formData.dob,
+      blood_group: formData.blood_group,
+      marital_status: formData.marital_status,
+      
+      // Map form field names back to API field names
+      phone: formData.mobile_number, // Form: mobile_number -> API: phone
+      personal_email: formData.personal_email,
+      emergency_contact_person: formData.emergency_contact_name, // Form: emergency_contact_name -> API: emergency_contact_person
+      emergency_contact_no: formData.emergency_contact_number, // Form: emergency_contact_number -> API: emergency_contact_no
+      
+      // Government IDs
+      pan_number: formData.pan_no, // Form: pan_no -> API: pan_number
+      adhar_number: formData.aadhaar_no, // Form: aadhaar_no -> API: adhar_number
+      uan_no: formData.uan_no,
+      
+      // Other details
+      nationality: formData.nationality,
+      interest: formData.interest,
+      passport_no: formData.passport_no,
+      passport_expiry: formData.passport_expiry,
+      has_pf: formData.has_pf,
+      pf_number: formData.pf_number,
+      pf_date: formData.pf_date,
+      has_esi: formData.has_esi,
+      esi_no: formData.esi_no,
+    };
+    
+    // Employment details (for create/update - these go in flat structure for the employee endpoint)
+    if (formData.email) apiData.email = formData.email;
+    if (formData.joining_date) apiData.joining_date = formData.joining_date;
+    if (formData.designation_id) apiData.designation_id = formData.designation_id;
+    if (formData.department_id) apiData.department_id = formData.department_id;
+    if (formData.team_id) apiData.team_id = formData.team_id;
+    if (formData.reporting_manager_id) apiData.reporting_manager_id = formData.reporting_manager_id;
+    if (formData.employment_status) apiData.employment_status = formData.employment_status;
+    if (formData.job_type) apiData.job_type = formData.job_type;
+    if (formData.branch_id) apiData.branch_id = formData.branch_id;
+    if (formData.time_doctor_user_id) apiData.time_doctor_user_id = formData.time_doctor_user_id;
+    if (formData.background_verificationstatus) apiData.background_verificationstatus = formData.background_verificationstatus;
+    
+    // ✅ FIX: Convert criminal_verification from numeric dropdown to boolean
+    // Form has: 1=Pending, 2=Completed, API expects: false=Pending, true=Completed
+    if (formData.criminal_verification !== undefined && formData.criminal_verification !== null) {
+      apiData.criminal_verification = formData.criminal_verification === 2; // 2 means Completed (true), otherwise false
+    }
+    
+    if (formData.total_experience_year !== undefined) apiData.total_experience_year = formData.total_experience_year;
+    if (formData.total_experience_month !== undefined) apiData.total_experience_month = formData.total_experience_month;
+    if (formData.relevant_experience_year !== undefined) apiData.relevant_experience_year = formData.relevant_experience_year;
+    if (formData.relevant_experience_month !== undefined) apiData.relevant_experience_month = formData.relevant_experience_month;
+    if (formData.probation_months !== undefined) apiData.probation_months = formData.probation_months;
+    if (formData.role_id) apiData.role_id = formData.role_id;
+    
+    return apiData;
+  }
+
   async function createEmployee(data: Partial<Employee>) {
     loading.value = true;
     error.value = null;
     try {
-      const response = await employeeService.createEmployee(data);
+      // Transform form data to API format
+      const apiData = transformFormDataForAPI(data);
+      const response = await employeeService.createEmployee(apiData);
       employees.value.push(response.data);
       return response.data;
     } catch (err: any) {
@@ -160,7 +355,9 @@ export const useEmployeeStore = defineStore('employee', () => {
     loading.value = true;
     error.value = null;
     try {
-      const response = await employeeService.updateEmployee(id, data);
+      // Transform form data to API format
+      const apiData = transformFormDataForAPI(data);
+      const response = await employeeService.updateEmployee(id, apiData);
       const index = employees.value.findIndex(emp => emp.id === id);
       if (index !== -1) {
         employees.value[index] = { ...employees.value[index], ...data };
