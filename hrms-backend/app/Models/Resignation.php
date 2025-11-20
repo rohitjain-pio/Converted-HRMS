@@ -70,24 +70,24 @@ class Resignation extends Model
     // Relationship: Resignation belongs to an Employee
     public function employee()
     {
-        return $this->belongsTo(EmployeeData::class, 'EmployeeId', 'Id');
+        return $this->belongsTo(EmployeeData::class, 'EmployeeId', 'id');
     }
 
     // Relationship: Resignation belongs to a Department
     public function department()
     {
-        return $this->belongsTo(Department::class, 'DepartmentID', 'Id');
+        return $this->belongsTo(Department::class, 'DepartmentID', 'id');
     }
 
     // Relationship: Resignation belongs to a Reporting Manager (Employee)
     public function reportingManager()
     {
-        return $this->belongsTo(EmployeeData::class, 'ReportingManagerId', 'Id');
+        return $this->belongsTo(EmployeeData::class, 'ReportingManagerId', 'id');
     }
 
     // Relationship: Resignation processed by Employee
     public function processedByEmployee()
     {
-        return $this->belongsTo(EmployeeData::class, 'ProcessedBy', 'Id');
+        return $this->belongsTo(EmployeeData::class, 'ProcessedBy', 'id');
     }
 }

@@ -33,60 +33,151 @@ class AdminExitEmployeeController extends Controller
     public function getResignationList(Request $request): JsonResponse
     {
         try {
-            $query = Resignation::with(['employee', 'department']);
+            $query = Resignation::with(['employee', 'department', 'reportingManager']);
 
-            // Apply search filters if provided
-            if ($request->has('search')) {
-                $searchData = $request->input('search');
+            // Apply filters if provided
+            if ($request->has('filters')) {
+                $filters = $request->input('filters');
                 
-                if (isset($searchData['EmployeeId']) && $searchData['EmployeeId']) {
-                    $query->where('EmployeeId', $searchData['EmployeeId']);
+                // Employee Code filter
+                if (!empty($filters['employeeCode'])) {
+                    $query->whereHas('employee', function($q) use ($filters) {
+                        $q->where('employee_code', 'like', '%' . $filters['employeeCode'] . '%');
+                    });
                 }
                 
-                if (isset($searchData['DepartmentID']) && $searchData['DepartmentID']) {
-                    $query->where('DepartmentID', $searchData['DepartmentID']);
+                // Employee Name filter
+                if (!empty($filters['employeeName'])) {
+                    $query->whereHas('employee', function($q) use ($filters) {
+                        $q->where(function($nameQuery) use ($filters) {
+                            $nameQuery->where('first_name', 'like', '%' . $filters['employeeName'] . '%')
+                                     ->orWhere('last_name', 'like', '%' . $filters['employeeName'] . '%');
+                        });
+                    });
                 }
                 
-                if (isset($searchData['Status']) && $searchData['Status']) {
-                    $query->where('Status', $searchData['Status']);
+                // Department filter
+                if (isset($filters['departmentId']) && $filters['departmentId'] > 0) {
+                    $query->where('DepartmentID', $filters['departmentId']);
                 }
                 
-                if (isset($searchData['FromDate']) && $searchData['FromDate']) {
-                    $query->where('CreatedOn', '>=', $searchData['FromDate']);
+                // Branch filter - need to join through employee
+                if (isset($filters['branchId']) && $filters['branchId'] > 0) {
+                    $query->whereHas('employee', function($q) use ($filters) {
+                        $q->where('branch_id', $filters['branchId']);
+                    });
                 }
                 
-                if (isset($searchData['ToDate']) && $searchData['ToDate']) {
-                    $query->where('CreatedOn', '<=', $searchData['ToDate']);
+                // Resignation Status filter
+                if (isset($filters['resignationStatus']) && $filters['resignationStatus'] > 0) {
+                    $query->where('Status', $filters['resignationStatus']);
+                }
+                
+                // Employee Status filter (Process field)
+                if (isset($filters['employeeStatus']) && $filters['employeeStatus'] > 0) {
+                    $query->where('Process', $filters['employeeStatus']);
+                }
+                
+                // IT No Due filter
+                if (isset($filters['itNoDue']) && $filters['itNoDue'] !== null) {
+                    $query->where('ITDues', $filters['itNoDue']);
+                }
+                
+                // Accounts No Due filter
+                if (isset($filters['accountsNoDue']) && $filters['accountsNoDue'] !== null) {
+                    $query->where('AccountNoDue', $filters['accountsNoDue']);
+                }
+                
+                // Last Working Day From filter
+                if (!empty($filters['lastWorkingDayFrom'])) {
+                    $query->where('LastWorkingDay', '>=', $filters['lastWorkingDayFrom']);
+                }
+                
+                // Last Working Day To filter
+                if (!empty($filters['lastWorkingDayTo'])) {
+                    $query->where('LastWorkingDay', '<=', $filters['lastWorkingDayTo']);
+                }
+                
+                // Resignation Date filter
+                if (!empty($filters['resignationDate'])) {
+                    $query->whereDate('CreatedOn', $filters['resignationDate']);
                 }
             }
 
+            // Sorting
+            $sortColumn = $request->input('sortColumnName', 'CreatedOn');
+            $sortDirection = $request->input('sortDirection', 'DESC');
+            
+            // Map frontend column names to database column names
+            $columnMap = [
+                'employeeCode' => 'employee.EmployeeCode',
+                'employeeName' => 'employee.Name',
+                'departmentName' => 'department.DepartmentName',
+                'resignationDate' => 'CreatedOn',
+                'lastWorkingDay' => 'LastWorkingDay',
+                'resignationStatus' => 'Status',
+                'employeeStatus' => 'Process',
+            ];
+            
+            if (isset($columnMap[$sortColumn])) {
+                $sortColumn = $columnMap[$sortColumn];
+            }
+
+            // Get total count before pagination
+            $totalRecords = $query->count();
+
             // Pagination
-            $pageNumber = $request->input('pageNumber', 1);
+            $startIndex = $request->input('startIndex', 0);
             $pageSize = $request->input('pageSize', 10);
             
-            $totalRecords = $query->count();
-            $resignations = $query->skip(($pageNumber - 1) * $pageSize)
+            $resignations = $query->skip($startIndex)
                                   ->take($pageSize)
-                                  ->orderBy('CreatedOn', 'desc')
+                                  ->orderBy($sortColumn, $sortDirection)
                                   ->get();
 
+            // Transform data to match frontend expectations
+            $exitEmployeeList = $resignations->map(function($resignation) {
+                $employee = $resignation->employee;
+                $department = $resignation->department;
+                $reportingManager = $resignation->reportingManager;
+                
+                return [
+                    'resignationId' => $resignation->Id,
+                    'employeeCode' => $employee->employee_code ?? '',
+                    'employeeName' => trim(($employee->first_name ?? '') . ' ' . ($employee->last_name ?? '')),
+                    'departmentName' => $department->department ?? '',
+                    'branchId' => $employee->branch_id ?? 0,
+                    'resignationDate' => $resignation->CreatedOn ? $resignation->CreatedOn->format('Y-m-d') : null,
+                    'lastWorkingDay' => $resignation->LastWorkingDay ? $resignation->LastWorkingDay->format('Y-m-d') : null,
+                    'earlyReleaseRequest' => (bool)$resignation->IsEarlyRequestRelease,
+                    'earlyReleaseDate' => $resignation->EarlyReleaseDate ? $resignation->EarlyReleaseDate->format('Y-m-d') : null,
+                    'earlyReleaseApprove' => $resignation->IsEarlyRequestApproved,
+                    'resignationStatus' => $resignation->Status ?? 1,
+                    'employeeStatus' => $resignation->Process ?? 1,
+                    'employmentStatus' => $resignation->SettlementStatus ?? 0,
+                    'ktStatus' => $resignation->KTStatus ?? 0,
+                    'exitInterviewStatus' => (bool)$resignation->ExitInterviewStatus,
+                    'itNoDue' => (bool)$resignation->ITDues,
+                    'accountsNoDue' => (bool)$resignation->AccountNoDue,
+                    'reportingManagerName' => $reportingManager ? trim(($reportingManager->first_name ?? '') . ' ' . ($reportingManager->last_name ?? '')) : '',
+                ];
+            });
+
             return response()->json([
-                'StatusCode' => 200,
-                'Message' => 'Resignation list retrieved successfully',
-                'Data' => [
-                    'Items' => $resignations,
-                    'TotalRecords' => $totalRecords,
-                    'PageNumber' => $pageNumber,
-                    'PageSize' => $pageSize
+                'statusCode' => 200,
+                'message' => 'Resignation list retrieved successfully',
+                'result' => [
+                    'exitEmployeeList' => $exitEmployeeList,
+                    'totalRecords' => $totalRecords,
                 ]
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
-                'StatusCode' => 500,
-                'Message' => 'An error occurred while retrieving resignation list',
-                'Data' => null,
-                'Error' => $e->getMessage()
+                'statusCode' => 500,
+                'message' => 'An error occurred while retrieving resignation list',
+                'result' => null,
+                'error' => $e->getMessage()
             ], 500);
         }
     }
@@ -113,27 +204,50 @@ class AdminExitEmployeeController extends Controller
 
             if (!$resignation) {
                 return response()->json([
-                    'StatusCode' => 404,
-                    'Message' => 'Resignation not found',
-                    'Data' => null
+                    'statusCode' => 404,
+                    'message' => 'Resignation not found',
+                    'result' => null
                 ], 404);
             }
 
-            // Add clearance completion flag
-            $resignation->allClearancesCompleted = $this->exitEmployeeService->areAllClearancesCompleted($id);
+            // Transform resignation data to match frontend ExitDetails type
+            $exitDetails = [
+                'resignationId' => $resignation->Id,
+                'employeeCode' => $resignation->employee->employee_code ?? '',
+                'employeeName' => trim(($resignation->employee->first_name ?? '') . ' ' . ($resignation->employee->last_name ?? '')),
+                'departmentName' => $resignation->department->department ?? '',
+                'resignationDate' => $resignation->ResignationDate ? Carbon::parse($resignation->ResignationDate)->format('Y-m-d') : null,
+                'lastWorkingDay' => $resignation->LastWorkingDay ? Carbon::parse($resignation->LastWorkingDay)->format('Y-m-d') : null,
+                'earlyReleaseDate' => $resignation->EarlyReleaseDate ? Carbon::parse($resignation->EarlyReleaseDate)->format('Y-m-d') : null,
+                'earlyReleaseRequest' => (bool)$resignation->EarlyReleaseRequest,
+                'earlyReleaseStatus' => $resignation->EarlyReleaseStatus ?? 0,
+                'resignationStatus' => $resignation->Status,
+                'employeeStatus' => $resignation->Process,
+                'employmentStatus' => $resignation->employee->employment_status ?? 1,
+                'ktStatus' => $resignation->departmentClearance ? (bool)$resignation->departmentClearance->KTStatus : false,
+                'exitInterviewStatus' => $resignation->hrClearance ? (bool)$resignation->hrClearance->ExitInterviewStatus : false,
+                'itNoDue' => (bool)$resignation->ITDues,
+                'accountsNoDue' => (bool)$resignation->AccountNoDue,
+                'reportingManagerName' => trim(($resignation->reportingManager->first_name ?? '') . ' ' . ($resignation->reportingManager->last_name ?? '')),
+                'jobType' => $resignation->employee->job_type ?? 0,
+                'reason' => $resignation->Reason ?? '',
+                'rejectResignationReason' => $resignation->RejectionReason ?? '',
+                'rejectEarlyReleaseReason' => $resignation->EarlyReleaseRejectionReason ?? '',
+                'allClearancesCompleted' => $this->exitEmployeeService->areAllClearancesCompleted($id),
+            ];
 
             return response()->json([
-                'StatusCode' => 200,
-                'Message' => 'Resignation details retrieved successfully',
-                'Data' => $resignation
+                'statusCode' => 200,
+                'message' => 'Resignation details retrieved successfully',
+                'result' => $exitDetails
             ], 200);
 
         } catch (\Exception $e) {
             return response()->json([
-                'StatusCode' => 500,
-                'Message' => 'An error occurred while retrieving resignation',
-                'Data' => null,
-                'Error' => $e->getMessage()
+                'statusCode' => 500,
+                'message' => 'An error occurred while retrieving resignation',
+                'result' => null,
+                'error' => $e->getMessage()
             ], 500);
         }
     }
