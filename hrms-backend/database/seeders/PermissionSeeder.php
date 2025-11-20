@@ -36,6 +36,16 @@ class PermissionSeeder extends Seeder
             ['name' => 'Attendance Configuration Admin', 'value' => 'attendance.admin', 'module_id' => 3, 'is_deleted' => false, 'created_by' => 'System', 'created_on' => now()],
             ['name' => 'View Attendance Reports', 'value' => 'attendance.report', 'module_id' => 3, 'is_deleted' => false, 'created_by' => 'System', 'created_on' => now()],
             ['name' => 'Export Attendance Reports', 'value' => 'attendance.export', 'module_id' => 3, 'is_deleted' => false, 'created_by' => 'System', 'created_on' => now()],
+
+            // Exit Management Module (Module ID: 4)
+            ['name' => 'View Exit Management', 'value' => 'Read.ExitManagement', 'module_id' => 4, 'is_deleted' => false, 'created_by' => 'System', 'created_on' => now()],
+            ['name' => 'Create Exit Management', 'value' => 'Create.ExitManagement', 'module_id' => 4, 'is_deleted' => false, 'created_by' => 'System', 'created_on' => now()],
+            ['name' => 'Edit Exit Management', 'value' => 'Edit.ExitManagement', 'module_id' => 4, 'is_deleted' => false, 'created_by' => 'System', 'created_on' => now()],
+            ['name' => 'Delete Exit Management', 'value' => 'Delete.ExitManagement', 'module_id' => 4, 'is_deleted' => false, 'created_by' => 'System', 'created_on' => now()],
+            ['name' => 'Approve Exit Management', 'value' => 'Approve.ExitManagement', 'module_id' => 4, 'is_deleted' => false, 'created_by' => 'System', 'created_on' => now()],
+            ['name' => 'Reject Exit Management', 'value' => 'Reject.ExitManagement', 'module_id' => 4, 'is_deleted' => false, 'created_by' => 'System', 'created_on' => now()],
+            ['name' => 'Initiate Exit', 'value' => 'Initiate.Exit', 'module_id' => 4, 'is_deleted' => false, 'created_by' => 'System', 'created_on' => now()],
+            ['name' => 'Clearance Exit', 'value' => 'Clearance.Exit', 'module_id' => 4, 'is_deleted' => false, 'created_by' => 'System', 'created_on' => now()],
         ];
 
         DB::table('permissions')->insert($permissions);

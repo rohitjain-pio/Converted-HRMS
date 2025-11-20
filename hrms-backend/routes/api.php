@@ -66,10 +66,14 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::get('/user', function (Request $request) {
         return $request->user();
     });
-    
+
     // Get menu structure for authenticated user
     Route::get('/menu', [AuthController::class, 'getMenu']);
-    
+
+    // Employee Exit Management API
+    Route::get('/employees/exit', [\App\Http\Controllers\Api\EmployeeExitController::class, 'index'])
+        ->middleware('permission:Read.ExitManagement');
+
     // Module-2: Employee Management Routes
     Route::prefix('employees')->group(function () {
         // Export/Import (matching legacy endpoints)
@@ -220,5 +224,67 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
         // Time Doctor Integration
         Route::post('/trigger-timesheet-sync', [\App\Http\Controllers\AttendanceController::class, 'triggerTimeDoctorSync'])
             ->middleware('permission:attendance.admin');
+    });
+
+    // ============================================================================
+    // EXIT MANAGEMENT (MODULE 4) - Employee Routes
+    // ============================================================================
+    Route::prefix('ExitEmployee')->group(function () {
+        // Submit new resignation
+        Route::post('/AddResignation', [\App\Http\Controllers\ExitEmployeeController::class, 'addResignation']);
+        
+        // Get resignation form details
+        Route::get('/GetResignationForm/{id}', [\App\Http\Controllers\ExitEmployeeController::class, 'getResignationForm']);
+        
+        // Get resignation exit details (with clearances)
+        Route::get('/GetResignationDetails/{id}', [\App\Http\Controllers\ExitEmployeeController::class, 'getResignationExitDetails']);
+        
+        // Revoke/Withdraw resignation
+        Route::post('/RevokeResignation/{resignationId}', [\App\Http\Controllers\ExitEmployeeController::class, 'revokeResignation']);
+        
+        // Request early release
+        Route::post('/RequestEarlyRelease', [\App\Http\Controllers\ExitEmployeeController::class, 'requestEarlyRelease']);
+        
+        // Check if resignation exists for employee
+        Route::get('/IsResignationExist/{employeeId}', [\App\Http\Controllers\ExitEmployeeController::class, 'isResignationExist']);
+    });
+
+    // ============================================================================
+    // EXIT MANAGEMENT (MODULE 4) - Admin Routes
+    // ============================================================================
+    Route::prefix('AdminExitEmployee')->group(function () {
+        // Get resignation list with search/filters
+        Route::post('/GetResignationList', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getResignationList']);
+        
+        // Get resignation detail by ID
+        Route::get('/GetResignationById/{id}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getResignationById']);
+        
+        // Accept resignation
+        Route::post('/AcceptResignation/{id}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'acceptResignation']);
+        
+        // Accept early release
+        Route::post('/AcceptEarlyRelease', [\App\Http\Controllers\AdminExitEmployeeController::class, 'acceptEarlyRelease']);
+        
+        // Admin rejection (resignation or early release)
+        Route::post('/AdminRejection', [\App\Http\Controllers\AdminExitEmployeeController::class, 'adminRejection']);
+        
+        // Update last working day
+        Route::patch('/UpdateLastWorkingDay', [\App\Http\Controllers\AdminExitEmployeeController::class, 'updateLastWorkingDay']);
+        
+        // HR Clearance
+        Route::get('/GetHRClearanceByResignationId/{resignationId}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getHRClearance']);
+        Route::post('/UpsertHRClearance', [\App\Http\Controllers\AdminExitEmployeeController::class, 'upsertHRClearance']);
+        
+        // Department Clearance
+        Route::get('/GetDepartmentClearanceDetailByResignationId/{resignationId}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getDepartmentClearance']);
+        Route::post('/UpsertDepartmentClearance', [\App\Http\Controllers\AdminExitEmployeeController::class, 'upsertDepartmentClearance']);
+        
+        // IT Clearance
+        Route::get('/GetITClearanceDetailByResignationId/{resignationId}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getITClearance']);
+        Route::post('/AddUpdateITClearance', [\App\Http\Controllers\AdminExitEmployeeController::class, 'addUpdateITClearance']);
+        
+        // Account Clearance
+        Route::get('/GetAccountClearance/{resignationId}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getAccountClearance']);
+        Route::post('/AddUpdateAccountClearance', [\App\Http\Controllers\AdminExitEmployeeController::class, 'addUpdateAccountClearance']);
     });
 });

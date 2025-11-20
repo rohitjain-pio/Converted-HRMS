@@ -221,23 +221,28 @@
           <BankDetailsForm :employee-id="employeeId" />
         </div>
 
-        <!-- Tab 6: Documents -->
+        <!-- Tab 6: Exit Details -->
         <div v-if="activeTab === 5" class="tab-pane">
+          <ExitDetailsTab :employee-id="employeeId" />
+        </div>
+
+        <!-- Tab 7: Documents -->
+        <div v-if="activeTab === 6" class="tab-pane">
           <DocumentUpload :employee-id="employeeId" />
         </div>
 
-        <!-- Tab 7: Qualifications -->
-        <div v-if="activeTab === 6" class="tab-pane">
+        <!-- Tab 8: Qualifications -->
+        <div v-if="activeTab === 7" class="tab-pane">
           <QualificationForm :employee-id="employeeId" />
         </div>
 
-        <!-- Tab 8: Certificates -->
-        <div v-if="activeTab === 7" class="tab-pane">
+        <!-- Tab 9: Certificates -->
+        <div v-if="activeTab === 8" class="tab-pane">
           <CertificateForm :employee-id="employeeId" />
         </div>
 
-        <!-- Tab 9: Nominees -->
-        <div v-if="activeTab === 8" class="tab-pane">
+        <!-- Tab 10: Nominees -->
+        <div v-if="activeTab === 9" class="tab-pane">
           <NomineeForm :employee-id="employeeId" />
         </div>
       </div>
@@ -257,6 +262,7 @@ import QualificationForm from './QualificationForm.vue';
 import CertificateForm from './CertificateForm.vue';
 import NomineeForm from './NomineeForm.vue';
 import ProfileCompleteness from './ProfileCompleteness.vue';
+import ExitDetailsTab from './tabs/ExitDetailsTab.vue';
 
 const router = useRouter();
 const route = useRoute();
@@ -276,6 +282,7 @@ const tabs = [
   { label: 'Employment' },
   { label: 'Address' },
   { label: 'Bank Details' },
+  { label: 'Exit Details' },
   { label: 'Documents' },
   { label: 'Qualifications' },
   { label: 'Certificates' },

@@ -471,18 +471,15 @@ class MenuSeeder extends Seeder
      */
     private function attachPermissions(Menu $menu, array $permissions): void
     {
-        // For now, skip permission attachment as we need to query the permissions table
-        // TODO: Implement proper permission lookup and attachment
-        // foreach ($permissions as $permission) {
-        //     $permissionRecord = DB::table('permissions')->where('value', $permission)->first();
-        //     if ($permissionRecord) {
-        //         DB::table('menu_permissions')->insert([
-        //             'menu_id' => $menu->id,
-        //             'permission_id' => $permissionRecord->id,
-        //             'created_by' => 'system',
-        //             'created_on' => now(),
-        //         ]);
-        //     }
-        // }
+        foreach ($permissions as $permission) {
+            if (Permissions::exists($permission)) {
+                DB::table('menu_permissions')->insert([
+                    'menu_id' => $menu->id,
+                    'permission' => $permission,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
     }
 }

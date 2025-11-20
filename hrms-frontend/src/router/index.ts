@@ -34,6 +34,7 @@ const routes: RouteRecordRaw[] = [
       title: 'Dashboard',
     },
   },
+
   // Attendance Management Routes (Module-3)
   {
     path: '/attendance/my-attendance',
@@ -42,7 +43,39 @@ const routes: RouteRecordRaw[] = [
     meta: { 
       requiresAuth: true,
       title: 'My Attendance',
-      permissions: ['attendance.read'],
+      },
+    },
+
+
+  // Exit Management Routes (Legacy-aligned)
+  {
+    path: '/employees/employee-exit',
+    name: 'EmployeeExitList',
+    component: () => import('@/components/exit-management/ExitEmployee/ExitEmployeeListPage.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Employee Exit',
+      permissions: ['Read.ExitManagement'],
+    },
+  },
+  {
+    path: '/employees/employee-exit/:resignationId',
+    name: 'EmployeeExitDetail',
+    component: () => import('@/components/exit-management/ExitEmployee/ExitDetailsPage.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Exit Details',
+      permissions: ['Read.ExitManagement'],
+    },
+  },
+  {
+    path: '/resignation-form/:userId?',
+    name: 'ResignationForm',
+    component: () => import('@/components/exit-management/Resignation/ResignationForm.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Resignation Form',
+      permissions: ['Initiate.Exit'],
     },
   },
   {

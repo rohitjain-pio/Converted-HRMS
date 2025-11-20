@@ -58,6 +58,8 @@
           <v-list-item-title>{{ item.name }}</v-list-item-title>
         </v-list-item>
       </template>
+
+
     </v-list>
   </v-navigation-drawer>
 </template>

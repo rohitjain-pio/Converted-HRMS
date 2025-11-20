@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exit Management Route Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1000px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .card {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+        h1 { color: #1e75bb; margin-bottom: 10px; }
+        h2 { color: #333; margin-top: 30px; border-bottom: 2px solid #1e75bb; padding-bottom: 10px; }
+        .success { color: #4caf50; font-weight: bold; }
+        .error { color: #f44336; font-weight: bold; }
+        .warning { color: #ff9800; font-weight: bold; }
+        .info { color: #2196F3; font-weight: bold; }
+        button {
+            background: #1e75bb;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px 10px 0;
+        }
+        button:hover { background: #155a8a; }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .result {
+            background: #f9f9f9;
+            padding: 15px;
+            border-left: 4px solid #1e75bb;
+            margin: 15px 0;
+            border-radius: 4px;
+        }
+        code {
+            background: #263238;
+            color: #aed581;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-family: 'Courier New', monospace;
+        }
+        pre {
+            background: #263238;
+            color: #aed581;
+            padding: 15px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 14px;
+        }
+        .step {
+            margin: 20px 0;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>🔍 Exit Management Route Diagnostic</h1>
+        <p>Testing access to <code>/employees/employee-exit</code></p>
+    </div>
+
+    <div class="card">
+        <h2>Step 1: Check Authentication</h2>
+        <div id="auth-status">Checking...</div>
+        <button onclick="checkAuth()">Re-check Auth</button>
+    </div>
+
+    <div class="card">
+        <h2>Step 2: Check User Permissions</h2>
+        <div id="permissions-status">Checking...</div>
+        <button onclick="checkPermissions()">Re-check Permissions</button>
+    </div>
+
+    <div class="card">
+        <h2>Step 3: Fetch Menu (should include Employee Exit)</h2>
+        <div id="menu-status">Checking...</div>
+        <button onclick="fetchMenu()">Fetch Menu</button>
+    </div>
+
+    <div class="card">
+        <h2>Step 4: Test Route Access</h2>
+        <div id="route-status">Ready to test</div>
+        <button onclick="testRoute()">Navigate to /employees/employee-exit</button>
+        <button onclick="window.location.href='http://localhost:5174/employees/employee-exit'">Direct Navigation</button>
+    </div>
+
+    <div class="card">
+        <h2>Quick Fixes</h2>
+        <div class="step">
+            <strong>If still blocked:</strong>
+            <ol>
+                <li>Clear localStorage: <button onclick="clearStorage()">Clear Now</button></li>
+                <li>Logout and login again to refresh token</li>
+                <li>Check browser console for errors (F12)</li>
+            </ol>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8000/api';
+        
+        function getToken() {
+            const authData = localStorage.getItem('auth');
+            if (!authData) return null;
+            const auth = JSON.parse(authData);
+            return auth.token;
+        }
+
+        async function checkAuth() {
+            const result = document.getElementById('auth-status');
+            const token = getToken();
+            
+            if (!token) {
+                result.innerHTML = '<span class="error">❌ Not authenticated. Please login first.</span>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/user`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    result.innerHTML = `
+                        <div class="result success">
+                            ✅ Authenticated as: ${data.data.email}<br>
+                            Role: ${data.data.role || 'N/A'}<br>
+                            Token valid: Yes
+                        </div>
+                    `;
+                } else {
+                    result.innerHTML = '<span class="error">❌ Token invalid or expired. Please login again.</span>';
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+            }
+        }
+
+        async function checkPermissions() {
+            const result = document.getElementById('permissions-status');
+            const authData = localStorage.getItem('auth');
+            
+            if (!authData) {
+                result.innerHTML = '<span class="error">❌ Not authenticated</span>';
+                return;
+            }
+
+            const auth = JSON.parse(authData);
+            const permissions = auth.permissions || [];
+            
+            result.innerHTML = `
+                <div class="result">
+                    <strong>Cached Permissions (${permissions.length} total):</strong><br>
+                    ${permissions.includes('Read.ExitManagement') 
+                        ? '<span class="success">✅ Has Read.ExitManagement</span>' 
+                        : '<span class="error">❌ Missing Read.ExitManagement</span>'}
+                    <br><br>
+                    <details>
+                        <summary>View all permissions</summary>
+                        <pre>${JSON.stringify(permissions, null, 2)}</pre>
+                    </details>
+                </div>
+            `;
+        }
+
+        async function fetchMenu() {
+            const result = document.getElementById('menu-status');
+            const token = getToken();
+            
+            if (!token) {
+                result.innerHTML = '<span class="error">❌ Not authenticated</span>';
+                return;
+            }
+
+            try {
+                result.innerHTML = '<span class="info">🔄 Fetching menu...</span>';
+                
+                const response = await fetch(`${API_BASE}/menu`, {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const employeesMenu = data.data.find(m => m.name === 'Employees');
+                    const exitMenu = employeesMenu?.sub_menus.find(s => s.name === 'Employee Exit');
+                    
+                    result.innerHTML = `
+                        <div class="result">
+                            ${exitMenu 
+                                ? `<span class="success">✅ "Employee Exit" menu found!</span><br>
+                                   Path: ${exitMenu.path}<br>
+                                   Has Access: ${exitMenu.has_access}` 
+                                : '<span class="error">❌ "Employee Exit" menu not found in response</span>'}
+                            <br><br>
+                            <details>
+                                <summary>View full menu</summary>
+                                <pre>${JSON.stringify(data.data, null, 2)}</pre>
+                            </details>
+                        </div>
+                    `;
+                } else {
+                    const error = await response.text();
+                    result.innerHTML = `<span class="error">❌ Failed: ${error}</span>`;
+                }
+            } catch (error) {
+                result.innerHTML = `<span class="error">❌ Error: ${error.message}</span>`;
+            }
+        }
+
+        function testRoute() {
+            const result = document.getElementById('route-status');
+            result.innerHTML = '<span class="info">🔄 Navigating to route...</span>';
+            
+            setTimeout(() => {
+                window.location.href = 'http://localhost:5174/employees/employee-exit';
+            }, 500);
+        }
+
+        function clearStorage() {
+            if (confirm('This will logout. Continue?')) {
+                localStorage.clear();
+                sessionStorage.clear();
+                alert('Storage cleared. Please login again.');
+                window.location.href = 'http://localhost:5174/login';
+            }
+        }
+
+        // Auto-run checks on load
+        window.addEventListener('DOMContentLoaded', () => {
+            checkAuth();
+            checkPermissions();
+        });
+    </script>
+</body>
+</html>
