@@ -26,14 +26,14 @@ class MasterDataController extends Controller
     public function getBranches(): JsonResponse
     {
         $branches = [
-            ['id' => 1, 'name' => 'Hyderabad'],
-            ['id' => 2, 'name' => 'Jaipur'],
-            ['id' => 3, 'name' => 'Pune'],
+            ['branchId' => 1, 'branchName' => 'Hyderabad'],
+            ['branchId' => 2, 'branchName' => 'Jaipur'],
+            ['branchId' => 3, 'branchName' => 'Pune'],
         ];
 
         return response()->json([
-            'success' => true,
-            'data' => $branches
+            'statusCode' => 200,
+            'result' => $branches
         ]);
     }
 
@@ -44,11 +44,11 @@ class MasterDataController extends Controller
     {
         $departments = Department::active()
             ->orderBy('department')
-            ->get(['id', 'department as name']);
+            ->get(['id as departmentId', 'department as departmentName']);
 
         return response()->json([
-            'success' => true,
-            'data' => $departments
+            'statusCode' => 200,
+            'result' => $departments
         ]);
     }
 
