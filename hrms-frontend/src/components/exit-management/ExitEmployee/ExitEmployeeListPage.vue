@@ -240,12 +240,14 @@
 
             <template #item.actions="{ item }">
               <v-btn
-                icon="mdi-eye"
+                icon
                 variant="text"
                 size="small"
                 color="primary"
                 :to="`/employees/employee-exit/${item.resignationId}`"
-              />
+              >
+                <v-icon>mdi-eye</v-icon>
+              </v-btn>
             </template>
 
             <template #no-data>
@@ -308,7 +310,7 @@ const headers = [
   { title: 'Employee Code', key: 'employeeCode', sortable: true },
   { title: 'Employee Name', key: 'employeeName', sortable: true },
   { title: 'Department', key: 'departmentName', sortable: true },
-  { title: 'Branch', key: 'branchId', sortable: true },
+  { title: 'Branch', key: 'branchName', sortable: true },
   { title: 'Resignation Date', key: 'resignationDate', sortable: true },
   { title: 'Last Working Day', key: 'lastWorkingDay', sortable: true },
   { title: 'Resignation Status', key: 'resignationStatus', sortable: true },

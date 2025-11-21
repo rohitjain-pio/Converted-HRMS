@@ -13,15 +13,15 @@ class RoleSeeder extends Seeder
      */
     public function run(): void
     {
+        // Exact roles from legacy 03_HRMS_MasterTable_Data.sql
         $roles = [
-            ['id' => 1, 'name' => 'SuperAdmin', 'is_active' => true, 'created_by' => 'System', 'created_on' => now()],
-            ['id' => 2, 'name' => 'HR', 'is_active' => true, 'created_by' => 'System', 'created_on' => now()],
-            ['id' => 3, 'name' => 'Employee', 'is_active' => true, 'created_by' => 'System', 'created_on' => now()],
-            ['id' => 4, 'name' => 'Accounts', 'is_active' => true, 'created_by' => 'System', 'created_on' => now()],
-            ['id' => 5, 'name' => 'Manager', 'is_active' => true, 'created_by' => 'System', 'created_on' => now()],
-            ['id' => 6, 'name' => 'IT', 'is_active' => true, 'created_by' => 'System', 'created_on' => now()],
-            ['id' => 7, 'name' => 'Developer', 'is_active' => true, 'created_by' => 'System', 'created_on' => now()],
-            ['id' => 8, 'name' => 'TeamLead', 'is_active' => true, 'created_by' => 'System', 'created_on' => now()],
+            ['id' => 1, 'name' => 'SuperAdmin', 'is_active' => true, 'created_by' => 'admin', 'created_on' => now()],
+            ['id' => 2, 'name' => 'HR', 'is_active' => true, 'created_by' => 'admin', 'created_on' => now()],
+            ['id' => 3, 'name' => 'Employee', 'is_active' => true, 'created_by' => 'admin', 'created_on' => now()],
+            ['id' => 4, 'name' => 'Accounts', 'is_active' => true, 'created_by' => 'admin', 'created_on' => now()],
+            ['id' => 5, 'name' => 'Manager', 'is_active' => true, 'created_by' => 'admin', 'created_on' => now()],
+            ['id' => 6, 'name' => 'IT', 'is_active' => true, 'created_by' => 'admin', 'created_on' => now()],
+            ['id' => 7, 'name' => 'Developer', 'is_active' => true, 'created_by' => 'admin', 'created_on' => now()],
         ];
 
         DB::table('roles')->insert($roles);

@@ -87,25 +87,5 @@ class QualificationSeeder extends Seeder
                 'is_deleted' => 0
             ]);
         }
-
-        // Insert employer document types
-        $empDocTypes = [
-            ['doc_type_name' => 'Appointment Letter', 'doc_type_code' => 'APL'],
-            ['doc_type_name' => 'Relieving Letter', 'doc_type_code' => 'REL'],
-            ['doc_type_name' => 'Experience Certificate', 'doc_type_code' => 'EXP'],
-            ['doc_type_name' => 'Salary Slip', 'doc_type_code' => 'SAL'],
-            ['doc_type_name' => 'Offer Letter', 'doc_type_code' => 'OFF'],
-            ['doc_type_name' => 'Pay Stub', 'doc_type_code' => 'PAY'],
-        ];
-
-        foreach ($empDocTypes as $docType) {
-            DB::table('employer_document_type')->insert([
-                'doc_type_name' => $docType['doc_type_name'],
-                'doc_type_code' => $docType['doc_type_code'],
-                'created_by' => 'system',
-                'created_on' => now(),
-                'is_deleted' => 0
-            ]);
-        }
     }
 }

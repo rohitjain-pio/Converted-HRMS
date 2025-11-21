@@ -13,7 +13,7 @@ return new class extends Migration
     {
         Schema::create('role_permissions', function (Blueprint $table) {
             $table->id();
-            $table->unsignedInteger('role_id');
+            $table->unsignedInteger('role_id');  // Match roles table unsigned integer type
             $table->foreignId('permission_id')->constrained('permissions');
             $table->boolean('is_active')->default(true);
             $table->string('created_by', 250);

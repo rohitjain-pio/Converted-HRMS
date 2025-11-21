@@ -70,6 +70,31 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // Get menu structure for authenticated user
     Route::get('/menu', [AuthController::class, 'getMenu']);
 
+    // ============================================================================
+    // ROLE & PERMISSION MANAGEMENT (MODULE 10)
+    // ============================================================================
+    Route::prefix('role-permission')->group(function () {
+        // Get roles list with pagination, search, sorting
+        Route::post('/get-roles', [\App\Http\Controllers\RolePermissionController::class, 'getRoles'])
+            ->middleware('permission:Read.Role');
+        
+        // Get module permissions by role ID
+        Route::get('/get-module-permissions-by-role', [\App\Http\Controllers\RolePermissionController::class, 'getModulePermissionsByRole'])
+            ->middleware('permission:View.Role');
+        
+        // Save role permissions (create or update)
+        Route::post('/save-role-permissions', [\App\Http\Controllers\RolePermissionController::class, 'saveRolePermissions'])
+            ->middleware('permission:Create.Role,Edit.Role');
+        
+        // Get all permissions grouped by modules (for role creation form)
+        Route::get('/get-permission-list', [\App\Http\Controllers\RolePermissionController::class, 'getPermissionList'])
+            ->middleware('permission:Read.Role');
+        
+        // Get simple roles list (for dropdowns)
+        Route::get('/get-roles-list', [\App\Http\Controllers\RolePermissionController::class, 'getRolesList'])
+            ->middleware('permission:Read.Role');
+    });
+
     // Employee Exit Management API
     Route::get('/employees/exit', [\App\Http\Controllers\Api\EmployeeExitController::class, 'index'])
         ->middleware('permission:Read.ExitManagement');
@@ -78,120 +103,134 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     Route::prefix('employees')->group(function () {
         // Export/Import (matching legacy endpoints)
         Route::post('/export', [\App\Http\Controllers\Api\EmployeeController::class, 'export'])
-            ->middleware('permission:employee.view');
+            ->middleware('permission:View.Employees');
         Route::post('/import', [\App\Http\Controllers\Api\EmployeeController::class, 'import'])
-            ->middleware('permission:employee.create');
+            ->middleware('permission:Create.Employees');
         
         // Employee CRUD (Features #1-8)
         Route::get('/', [\App\Http\Controllers\Api\EmployeeController::class, 'index'])
-            ->middleware('permission:employee.view');
+            ->middleware('permission:View.Employees');
         Route::post('/', [\App\Http\Controllers\Api\EmployeeController::class, 'store'])
-            ->middleware('permission:employee.create');
+            ->middleware('permission:Create.Employees');
         
         // Address Management (Features #16-18)
         Route::prefix('addresses')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\AddressController::class, 'index'])
-                ->middleware('permission:employee.view');
+                ->middleware('permission:View.Employees|self');
             Route::post('/current', [\App\Http\Controllers\Api\AddressController::class, 'storeCurrentAddress'])
-                ->middleware('permission:employee.create');
+                ->middleware('permission:Create.Employees|self');
             Route::post('/permanent', [\App\Http\Controllers\Api\AddressController::class, 'storePermanentAddress'])
-                ->middleware('permission:employee.create');
+                ->middleware('permission:Create.Employees|self');
             Route::post('/copy-current-to-permanent', [\App\Http\Controllers\Api\AddressController::class, 'copyCurrentToPermanent'])
-                ->middleware('permission:employee.create');
+                ->middleware('permission:Create.Employees|self');
         });
         
         // Bank Details Management (Features #19-22)
         Route::prefix('bank-details')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\BankDetailsController::class, 'index'])
-                ->middleware('permission:employee.view');
+                ->middleware('permission:View.Employees|self');
             Route::post('/', [\App\Http\Controllers\Api\BankDetailsController::class, 'store'])
-                ->middleware('permission:employee.create');
+                ->middleware('permission:Create.Employees|self');
             Route::put('/{id}', [\App\Http\Controllers\Api\BankDetailsController::class, 'update'])
-                ->middleware('permission:employee.edit');
+                ->middleware('permission:Edit.Employees|self');
             Route::delete('/{id}', [\App\Http\Controllers\Api\BankDetailsController::class, 'destroy'])
-                ->middleware('permission:employee.delete');
+                ->middleware('permission:Delete.Employees|self');
             Route::post('/{id}/set-active', [\App\Http\Controllers\Api\BankDetailsController::class, 'setActive'])
-                ->middleware('permission:employee.edit');
+                ->middleware('permission:Edit.Employees|self');
+        });
+        
+        // Previous Employer Management
+        Route::prefix('previous-employers')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\PreviousEmployerController::class, 'index'])
+                ->middleware('permission:View.Employees|self');
+            Route::post('/', [\App\Http\Controllers\Api\PreviousEmployerController::class, 'store'])
+                ->middleware('permission:Create.Employees|self');
+            Route::get('/{id}', [\App\Http\Controllers\Api\PreviousEmployerController::class, 'show'])
+                ->middleware('permission:View.Employees|self');
+            Route::put('/{id}', [\App\Http\Controllers\Api\PreviousEmployerController::class, 'update'])
+                ->middleware('permission:Edit.Employees|self');
+            Route::delete('/{id}', [\App\Http\Controllers\Api\PreviousEmployerController::class, 'destroy'])
+                ->middleware('permission:Delete.Employees|self');
         });
         
         // Nominee Management (Features #32-38)
         Route::prefix('nominees')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\NomineeController::class, 'index'])
-                ->middleware('permission:employee.view');
+                ->middleware('permission:View.Employees|self');
             Route::post('/', [\App\Http\Controllers\Api\NomineeController::class, 'store'])
-                ->middleware('permission:employee.create');
+                ->middleware('permission:Create.Employees|self');
             Route::put('/{id}', [\App\Http\Controllers\Api\NomineeController::class, 'update'])
-                ->middleware('permission:employee.edit');
+                ->middleware('permission:Edit.Employees|self');
             Route::delete('/{id}', [\App\Http\Controllers\Api\NomineeController::class, 'destroy'])
-                ->middleware('permission:employee.delete');
+                ->middleware('permission:Delete.Employees|self');
             Route::post('/verify-percentage', [\App\Http\Controllers\Api\NomineeController::class, 'verifyPercentage'])
-                ->middleware('permission:employee.view');
+                ->middleware('permission:View.Employees|self');
         });
         
         // Document Management (Features #23-26)
         Route::prefix('documents')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\DocumentController::class, 'index'])
-                ->middleware('permission:employee.view');
+                ->middleware('permission:View.Employees|self');
             Route::post('/', [\App\Http\Controllers\Api\DocumentController::class, 'store'])
-                ->middleware('permission:employee.create');
+                ->middleware('permission:Create.Employees|self');
             Route::put('/{id}', [\App\Http\Controllers\Api\DocumentController::class, 'update'])
-                ->middleware('permission:employee.edit');
+                ->middleware('permission:Edit.Employees|self');
             Route::delete('/{id}', [\App\Http\Controllers\Api\DocumentController::class, 'destroy'])
-                ->middleware('permission:employee.delete');
+                ->middleware('permission:Delete.Employees|self');
             Route::get('/{id}/download', [\App\Http\Controllers\Api\DocumentController::class, 'download'])
-                ->middleware('permission:employee.view');
+                ->middleware('permission:View.Employees|self');
             Route::get('/types', [\App\Http\Controllers\Api\DocumentController::class, 'getDocumentTypes'])
-                ->middleware('permission:employee.view');
+                ->middleware('permission:View.Employees|self');
         });
         
         // Qualification Management (Features #39-44)
         Route::prefix('qualifications')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\QualificationController::class, 'index'])
-                ->middleware('permission:employee.view');
+                ->middleware('permission:View.Employees|self');
             Route::post('/', [\App\Http\Controllers\Api\QualificationController::class, 'store'])
-                ->middleware('permission:employee.create');
+                ->middleware('permission:Create.Employees|self');
             Route::put('/{id}', [\App\Http\Controllers\Api\QualificationController::class, 'update'])
-                ->middleware('permission:employee.edit');
+                ->middleware('permission:Edit.Employees|self');
             Route::delete('/{id}', [\App\Http\Controllers\Api\QualificationController::class, 'destroy'])
-                ->middleware('permission:employee.delete');
+                ->middleware('permission:Delete.Employees|self');
             Route::get('/masters/qualifications', [\App\Http\Controllers\Api\QualificationController::class, 'getQualifications'])
-                ->middleware('permission:employee.view');
+                ->middleware('permission:View.Employees|self');
             Route::get('/masters/universities', [\App\Http\Controllers\Api\QualificationController::class, 'getUniversities'])
-                ->middleware('permission:employee.view');
+                ->middleware('permission:View.Employees|self');
         });
         
         // Certificate Management (Features #45-46)
         Route::prefix('certificates')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\QualificationController::class, 'getCertificates'])
-                ->middleware('permission:employee.view');
+                ->middleware('permission:View.Employees|self');
             Route::post('/', [\App\Http\Controllers\Api\QualificationController::class, 'storeCertificate'])
-                ->middleware('permission:employee.create');
+                ->middleware('permission:Create.Employees|self');
             Route::delete('/{id}', [\App\Http\Controllers\Api\QualificationController::class, 'destroyCertificate'])
-                ->middleware('permission:employee.delete');
+                ->middleware('permission:Delete.Employees|self');
         });
         
         // Profile Picture Management
         Route::prefix('profile-picture')->group(function () {
             Route::post('/upload', [\App\Http\Controllers\Api\ProfilePictureController::class, 'upload'])
-                ->middleware('permission:employee.create');
+                ->middleware('permission:Create.Employees|self');
             Route::post('/{id}/update', [\App\Http\Controllers\Api\ProfilePictureController::class, 'update'])
-                ->middleware('permission:employee.edit');
+                ->middleware('permission:Edit.Employees|self');
             Route::delete('/{id}', [\App\Http\Controllers\Api\ProfilePictureController::class, 'remove'])
-                ->middleware('permission:employee.delete');
+                ->middleware('permission:Delete.Employees|self');
             Route::get('/{id}/url', [\App\Http\Controllers\Api\ProfilePictureController::class, 'getUrl'])
-                ->middleware('permission:employee.view');
+                ->middleware('permission:View.Employees|self');
         });
         
         // Employee CRUD with ID (must be at the end to avoid catching nested routes)
         // Note: More specific routes like /{id}/profile-completeness must come BEFORE /{id}
         Route::get('/{id}/profile-completeness', [\App\Http\Controllers\Api\EmployeeController::class, 'getProfileCompleteness'])
-            ->middleware('permission:employee.view');
+            ->middleware('permission:View.Employees|self');
         Route::get('/{id}', [\App\Http\Controllers\Api\EmployeeController::class, 'show'])
-            ->middleware('permission:employee.view');
+            ->middleware('permission:View.Employees|self');
         Route::put('/{id}', [\App\Http\Controllers\Api\EmployeeController::class, 'update'])
-            ->middleware('permission:employee.edit');
+            ->middleware('permission:Edit.Employees|self');
         Route::delete('/{id}', [\App\Http\Controllers\Api\EmployeeController::class, 'destroy'])
-            ->middleware('permission:employee.delete');
+            ->middleware('permission:Delete.Employees');
     });
     
     // Module-3: Attendance Management Routes
@@ -230,23 +269,29 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // EXIT MANAGEMENT (MODULE 4) - Employee Routes
     // ============================================================================
     Route::prefix('ExitEmployee')->group(function () {
-        // Submit new resignation
-        Route::post('/AddResignation', [\App\Http\Controllers\ExitEmployeeController::class, 'addResignation']);
+        // Submit new resignation (requires Create.PersonalDetails permission as per legacy)
+        Route::post('/AddResignation', [\App\Http\Controllers\ExitEmployeeController::class, 'addResignation'])
+            ->middleware('permission:Create.PersonalDetails');
         
-        // Get resignation form details
-        Route::get('/GetResignationForm/{id}', [\App\Http\Controllers\ExitEmployeeController::class, 'getResignationForm']);
+        // Get resignation form details (requires View.PersonalDetails permission)
+        Route::get('/GetResignationForm/{id}', [\App\Http\Controllers\ExitEmployeeController::class, 'getResignationForm'])
+            ->middleware('permission:View.PersonalDetails');
         
-        // Get resignation exit details (with clearances)
-        Route::get('/GetResignationDetails/{id}', [\App\Http\Controllers\ExitEmployeeController::class, 'getResignationExitDetails']);
+        // Get resignation exit details (requires View.PersonalDetails permission)
+        Route::get('/GetResignationDetails/{id}', [\App\Http\Controllers\ExitEmployeeController::class, 'getResignationExitDetails'])
+            ->middleware('permission:View.PersonalDetails');
         
-        // Revoke/Withdraw resignation
-        Route::post('/RevokeResignation/{resignationId}', [\App\Http\Controllers\ExitEmployeeController::class, 'revokeResignation']);
+        // Revoke/Withdraw resignation (requires Edit.PersonalDetails permission)
+        Route::post('/RevokeResignation/{resignationId}', [\App\Http\Controllers\ExitEmployeeController::class, 'revokeResignation'])
+            ->middleware('permission:Edit.PersonalDetails');
         
-        // Request early release
-        Route::post('/RequestEarlyRelease', [\App\Http\Controllers\ExitEmployeeController::class, 'requestEarlyRelease']);
+        // Request early release (requires Create.PersonalDetails permission)
+        Route::post('/RequestEarlyRelease', [\App\Http\Controllers\ExitEmployeeController::class, 'requestEarlyRelease'])
+            ->middleware('permission:Create.PersonalDetails');
         
-        // Check if resignation exists for employee
-        Route::get('/IsResignationExist/{employeeId}', [\App\Http\Controllers\ExitEmployeeController::class, 'isResignationExist']);
+        // Check if resignation exists for employee (requires View.PersonalDetails permission)
+        Route::get('/IsResignationExist/{employeeId}', [\App\Http\Controllers\ExitEmployeeController::class, 'isResignationExist'])
+            ->middleware('permission:View.PersonalDetails');
     });
 
     // ============================================================================
@@ -254,37 +299,55 @@ Route::middleware(['auth:sanctum', 'throttle:api'])->group(function () {
     // ============================================================================
     Route::prefix('AdminExitEmployee')->group(function () {
         // Get resignation list with search/filters
-        Route::post('/GetResignationList', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getResignationList']);
+        Route::post('/GetResignationList', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getResignationList'])
+            ->middleware('permission:Read.ExitManagement');
         
         // Get resignation detail by ID
-        Route::get('/GetResignationById/{id}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getResignationById']);
+        Route::get('/GetResignationById/{id}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getResignationById'])
+            ->middleware('permission:Read.ExitManagement');
         
         // Accept resignation
-        Route::post('/AcceptResignation/{id}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'acceptResignation']);
+        Route::post('/AcceptResignation/{id}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'acceptResignation'])
+            ->middleware('permission:Approve.Resignation');
         
         // Accept early release
-        Route::post('/AcceptEarlyRelease', [\App\Http\Controllers\AdminExitEmployeeController::class, 'acceptEarlyRelease']);
+        Route::post('/AcceptEarlyRelease', [\App\Http\Controllers\AdminExitEmployeeController::class, 'acceptEarlyRelease'])
+            ->middleware('permission:Approve.Resignation');
         
         // Admin rejection (resignation or early release)
-        Route::post('/AdminRejection', [\App\Http\Controllers\AdminExitEmployeeController::class, 'adminRejection']);
+        Route::post('/AdminRejection', [\App\Http\Controllers\AdminExitEmployeeController::class, 'adminRejection'])
+            ->middleware('permission:Reject.Resignation');
         
         // Update last working day
-        Route::patch('/UpdateLastWorkingDay', [\App\Http\Controllers\AdminExitEmployeeController::class, 'updateLastWorkingDay']);
+        Route::patch('/UpdateLastWorkingDay', [\App\Http\Controllers\AdminExitEmployeeController::class, 'updateLastWorkingDay'])
+            ->middleware('permission:Edit.ExitManagement');
         
         // HR Clearance
-        Route::get('/GetHRClearanceByResignationId/{resignationId}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getHRClearance']);
-        Route::post('/UpsertHRClearance', [\App\Http\Controllers\AdminExitEmployeeController::class, 'upsertHRClearance']);
+        Route::get('/GetHRClearanceByResignationId/{resignationId}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getHRClearance'])
+            ->middleware('permission:Read.HRClearance');
+        Route::post('/UpsertHRClearance', [\App\Http\Controllers\AdminExitEmployeeController::class, 'upsertHRClearance'])
+            ->middleware('permission:Edit.HRClearance');
         
         // Department Clearance
-        Route::get('/GetDepartmentClearanceDetailByResignationId/{resignationId}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getDepartmentClearance']);
-        Route::post('/UpsertDepartmentClearance', [\App\Http\Controllers\AdminExitEmployeeController::class, 'upsertDepartmentClearance']);
+        Route::get('/GetDepartmentClearanceDetailByResignationId/{resignationId}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getDepartmentClearance'])
+            ->middleware('permission:Read.DepartmentClearance');
+        Route::post('/UpsertDepartmentClearance', [\App\Http\Controllers\AdminExitEmployeeController::class, 'upsertDepartmentClearance'])
+            ->middleware('permission:Edit.DepartmentClearance');
         
         // IT Clearance
-        Route::get('/GetITClearanceDetailByResignationId/{resignationId}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getITClearance']);
-        Route::post('/AddUpdateITClearance', [\App\Http\Controllers\AdminExitEmployeeController::class, 'addUpdateITClearance']);
+        Route::get('/GetITClearanceDetailByResignationId/{resignationId}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getITClearance'])
+            ->middleware('permission:Read.ITClearance');
+        Route::post('/AddUpdateITClearance', [\App\Http\Controllers\AdminExitEmployeeController::class, 'addUpdateITClearance'])
+            ->middleware('permission:Edit.ITClearance');
         
         // Account Clearance
-        Route::get('/GetAccountClearance/{resignationId}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getAccountClearance']);
-        Route::post('/AddUpdateAccountClearance', [\App\Http\Controllers\AdminExitEmployeeController::class, 'addUpdateAccountClearance']);
+        Route::get('/GetAccountClearance/{resignationId}', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getAccountClearance'])
+            ->middleware('permission:Read.AccountClearance');
+        Route::post('/AddUpdateAccountClearance', [\App\Http\Controllers\AdminExitEmployeeController::class, 'addUpdateAccountClearance'])
+            ->middleware('permission:Edit.AccountClearance');
+        
+        // Document Management
+        Route::post('/GetDocumentUrl', [\App\Http\Controllers\AdminExitEmployeeController::class, 'getDocumentUrl'])
+            ->middleware('permission:Read.ExitManagement');
     });
 });

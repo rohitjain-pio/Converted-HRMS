@@ -5,7 +5,7 @@ namespace App\Services;
 use App\Models\Resignation;
 use App\Models\ResignationHistory;
 use App\Models\EmployeeData;
-use App\Models\Employment;
+use App\Models\EmploymentDetail;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -21,16 +21,16 @@ class ExitEmployeeService
      */
     public function calculateLastWorkingDay(int $employeeId, string $resignationDate): string
     {
-        // Get employee's job type from Employment table
-        $employment = Employment::where('EmployeeId', $employeeId)
-            ->where('IsActive', true)
+        // Get employee's job type from employment_details table
+        $employment = EmploymentDetail::where('employee_id', $employeeId)
+            ->where('is_deleted', false)
             ->first();
 
         if (!$employment) {
             throw new \Exception('Active employment record not found');
         }
 
-        $noticePeriodDays = $this->getNoticePeriodDays($employment->JobTypeId);
+        $noticePeriodDays = $this->getNoticePeriodDays($employment->job_type ?? 1); // Default to 1 if null
         
         // Calculate last working day
         $resignDate = Carbon::parse($resignationDate);

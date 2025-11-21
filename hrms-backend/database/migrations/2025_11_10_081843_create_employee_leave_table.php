@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('employee_leave', function (Blueprint $table) {
             $table->id();
             $table->foreignId('employee_id')->constrained('employee_data');
-            $table->unsignedInteger('leave_id');
+            $table->foreignId('leave_id')->constrained('leave_types');  // Changed to foreignId to match leave_types.id
             $table->decimal('opening_balance', 18, 2)->default(0);
             $table->date('leave_date');
             $table->boolean('is_active')->nullable()->default(true);
@@ -25,7 +25,6 @@ return new class extends Migration
             $table->boolean('is_deleted')->default(false);
             
             $table->index(['employee_id', 'leave_id', 'is_deleted']);
-            $table->foreign('leave_id')->references('id')->on('leave_types');
         });
     }
 

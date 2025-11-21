@@ -5,7 +5,7 @@ import api from '@/services/api';
  * Maps to Laravel ExitEmployeeController
  */
 
-const BASE_URL = '/api/ExitEmployee';
+const BASE_URL = '/ExitEmployee';
 
 export interface AddResignationRequest {
   EmployeeId: number;

@@ -112,6 +112,7 @@
         <v-tab value="education">Education Details</v-tab>
         <v-tab value="nominee">Nominee Details</v-tab>
         <v-tab value="certificate">Certificate Details</v-tab>
+        <v-tab v-if="hasResignation" value="exit-details">Exit Details</v-tab>
       </v-tabs>
 
       <v-card-text>
@@ -158,7 +159,6 @@
               v-if="employee"
               ref="officialDetailsRef"
               :employee="employee"
-              :bank-details="bankDetails"
               :edit-mode="isEditingOfficial"
               @refresh="loadEmployeeData"
             />
@@ -225,6 +225,15 @@
               @refresh="loadEmployeeData"
             />
             <div v-else class="pa-4">Loading certificate details...</div>
+          </v-window-item>
+
+          <!-- Exit Details Tab -->
+          <v-window-item v-if="hasResignation" value="exit-details">
+            <ExitDetailsTab
+              v-if="employee?.id"
+              :employee-id="employee.id"
+            />
+            <div v-else class="pa-4">Loading exit details...</div>
           </v-window-item>
         </v-window>
       </v-card-text>
@@ -296,23 +305,31 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted, watch } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
+import { useAuth } from '@/composables/useAuth';
 import { useEmployeeStore } from '@/stores/employeeStore';
 import type { Employee, Address, BankDetails, ProfileCompleteness as ProfileCompletenessType } from '@/types/employee';
+import { exitEmployeeApi } from '@/api/exitEmployeeApi';
 import ProfileCompleteness from './ProfileCompleteness.vue';
 import PersonalDetailsTab from './tabs/PersonalDetailsTab.vue';
 import OfficialDetailsTab from './tabs/OfficialDetailsTab.vue';
 import EmploymentDetailsTab from './tabs/EmploymentDetailsTab.vue';
+import ExitDetailsTab from './tabs/ExitDetailsTab.vue';
 import QualificationForm from './QualificationForm.vue';
 import NomineeForm from './NomineeForm.vue';
 import CertificateForm from './CertificateForm.vue';
 
 const props = defineProps<{
-  employeeId: number;
+  employeeId?: number; // Optional - defaults to current user
 }>();
 
 const router = useRouter();
+const route = useRoute();
+const { user } = useAuth();
 const employeeStore = useEmployeeStore();
+
+// Use provided employeeId or current user's ID
+const effectiveEmployeeId = computed(() => props.employeeId || user.value?.id || 0);
 
 const employee = ref<Employee | null>(null);
 const currentAddress = ref<Address | null>(null);
@@ -332,6 +349,7 @@ const isEditingOfficial = ref(false);
 const saving = ref(false);
 const personalDetailsRef = ref<any>(null);
 const officialDetailsRef = ref<any>(null);
+const hasResignation = ref(false);
 
 const isEditing = computed(() => {
   if (activeTab.value === 'personal') return isEditingPersonal.value;
@@ -358,30 +376,62 @@ const employmentStatus = computed(() => {
 });
 
 onMounted(async () => {
-  await loadEmployeeData();
+  // Check for tab parameter in URL
+  if (route.query.tab) {
+    activeTab.value = route.query.tab as string;
+  }
+  
+  await Promise.all([
+    loadEmployeeData(),
+    checkResignationStatus()
+  ]);
 });
 
 async function loadEmployeeData() {
   loading.value = true;
   try {
     // Load employee basic info
-    employee.value = await employeeStore.fetchEmployeeById(props.employeeId);
+    employee.value = await employeeStore.fetchEmployeeById(effectiveEmployeeId.value);
     
     // Load addresses
-    const addressesData = await employeeStore.fetchAddresses(props.employeeId);
+    const addressesData = await employeeStore.fetchAddresses(effectiveEmployeeId.value);
     // API returns { current, permanent }, not an array
     currentAddress.value = addressesData.current || null;
     permanentAddress.value = addressesData.permanent || null;
     
     // Load bank details
-    bankDetails.value = await employeeStore.fetchBankDetails(props.employeeId);
+    bankDetails.value = await employeeStore.fetchBankDetails(effectiveEmployeeId.value);
     
     // Load profile completeness
-    profileCompleteness.value = await employeeStore.getProfileCompleteness(props.employeeId);
+    profileCompleteness.value = await employeeStore.getProfileCompleteness(effectiveEmployeeId.value);
   } catch (error) {
     console.error('Failed to load employee data:', error);
   } finally {
     loading.value = false;
+  }
+}
+
+async function checkResignationStatus() {
+  try {
+    console.log('🔍 Checking resignation status for employee:', effectiveEmployeeId.value);
+    const response = await exitEmployeeApi.isResignationExist(effectiveEmployeeId.value);
+    console.log('📥 Resignation API response:', response.data);
+    
+    if (response.data.StatusCode === 200) {
+      const resignationData = response.data.Data;
+      console.log('📋 Resignation data:', resignationData);
+      console.log('✅ Exists?', resignationData?.Exists);
+      
+      // Show tab if ANY resignation exists
+      hasResignation.value = resignationData?.Exists === true;
+      console.log('🏷️ hasResignation set to:', hasResignation.value);
+    } else {
+      console.warn('⚠️ Non-200 status code:', response.data.StatusCode);
+    }
+  } catch (error) {
+    console.error('❌ Error checking resignation status:', error);
+    // If there's an error, still check if we should show the tab based on user permissions
+    hasResignation.value = false;
   }
 }
 
@@ -416,7 +466,12 @@ function getStatusColor(status: string | null | undefined): string {
 }
 
 function goBack() {
-  router.push('/employees/list');
+  // If viewing own profile, go to dashboard, otherwise go to employee list
+  if (!props.employeeId || props.employeeId === user.value?.id) {
+    router.push('/dashboard');
+  } else {
+    router.push('/employees/list');
+  }
 }
 
 function toggleEditMode() {
@@ -459,33 +514,37 @@ async function savePersonalDetails() {
   try {
     const data = personalDetailsRef.value.getData();
     
-    // Save personal details
+    console.log('Raw data from PersonalDetailsTab:', data.employee);
+    
+    // Save personal details - ensure empty strings are sent, not undefined
     const updateData = {
-      first_name: data.employee.first_name?.trim(),
-      middle_name: data.employee.middle_name?.trim(),
-      last_name: data.employee.last_name?.trim(),
-      father_name: data.employee.father_name?.trim(),
+      first_name: data.employee.first_name?.trim() || '',
+      middle_name: data.employee.middle_name?.trim() || '',
+      last_name: data.employee.last_name?.trim() || '',
+      father_name: data.employee.father_name?.trim() || '',
       gender: data.employee.gender,
       dob: data.employee.dob,
       blood_group: data.employee.blood_group || '',
       marital_status: data.employee.marital_status,
-      nationality: data.employee.nationality?.trim(),
-      phone: data.employee.phone?.trim(),
-      alternate_phone: data.employee.alternate_phone?.trim() || null,
-      personal_email: data.employee.personal_email?.trim(),
-      emergency_contact_person: data.employee.emergency_contact_person?.trim(),
-      emergency_contact_no: data.employee.emergency_contact_no?.trim(),
-      interest: data.employee.interest?.trim() || null
+      nationality: data.employee.nationality?.trim() || '',
+      phone: data.employee.phone?.trim() || '',
+      alternate_phone: data.employee.alternate_phone?.trim() || '',
+      personal_email: data.employee.personal_email?.trim() || '',
+      emergency_contact_person: data.employee.emergency_contact_person?.trim() || '',
+      emergency_contact_no: data.employee.emergency_contact_no?.trim() || '',
+      interest: data.employee.interest?.trim() || ''
     };
     
-    await employeeStore.updateEmployee(props.employeeId, updateData);
+    console.log('Update data being sent to API:', updateData);
+    
+    await employeeStore.updateEmployee(effectiveEmployeeId.value, updateData);
     
     // Save current address
     if (data.currentAddress) {
       console.log('Saving current address:', data.currentAddress);
       await employeeStore.saveCurrentAddress({
         ...data.currentAddress,
-        employee_id: props.employeeId,
+        employee_id: effectiveEmployeeId.value,
         address_type: 1
       });
     }
@@ -495,7 +554,7 @@ async function savePersonalDetails() {
       console.log('Saving permanent address:', data.permanentAddress);
       await employeeStore.savePermanentAddress({
         ...data.permanentAddress,
-        employee_id: props.employeeId,
+        employee_id: effectiveEmployeeId.value,
         address_type: 2
       });
     } else {
@@ -529,7 +588,9 @@ async function saveOfficialDetails() {
   saving.value = true;
   try {
     const data = officialDetailsRef.value.getData();
-    await employeeStore.updateEmployee(props.employeeId, data);
+    console.log('Official details data to save:', data);
+    
+    await employeeStore.updateEmployee(effectiveEmployeeId.value, data);
     
     isEditingOfficial.value = false;
     await loadEmployeeData();

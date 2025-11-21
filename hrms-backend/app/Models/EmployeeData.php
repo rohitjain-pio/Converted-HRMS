@@ -60,9 +60,8 @@ class EmployeeData extends Model
 
     protected $casts = [
         'dob' => 'date',
-        'has_esi' => 'boolean',
-        'has_pf' => 'boolean',
-        'uan_no' => 'boolean',
+        'has_esi' => 'integer',
+        'has_pf' => 'integer',
         'is_deleted' => 'boolean',
         'refresh_token_expiry_date' => 'datetime',
         'passport_expiry' => 'datetime',

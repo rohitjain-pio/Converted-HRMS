@@ -104,8 +104,7 @@
               color="primary"
               variant="text"
               prepend-icon="mdi-file-document"
-              :href="getAttachmentUrl(formData.attachment)"
-              target="_blank"
+              @click="viewAttachment"
             >
               View Current Attachment
             </v-btn>
@@ -252,8 +251,24 @@ const resetForm = () => {
   formRef.value?.resetValidation();
 };
 
-const getAttachmentUrl = (filename: string) => {
-  return `${import.meta.env.VITE_API_BASE_URL}/storage/${filename}`;
+const getAttachmentUrl = async (filename: string) => {
+  if (!filename) return '';
+  try {
+    const response = await adminExitEmployeeApi.getDocumentUrl('user-documents', filename);
+    return response.data.data.url;
+  } catch (error) {
+    console.error('Error getting document URL:', error);
+    return '';
+  }
+};
+
+const viewAttachment = async () => {
+  if (formData.value.attachment) {
+    const url = await getAttachmentUrl(formData.value.attachment);
+    if (url) {
+      window.open(url, '_blank');
+    }
+  }
 };
 
 onMounted(() => {

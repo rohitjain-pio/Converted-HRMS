@@ -49,7 +49,7 @@ export interface UpsertHRClearanceRequest {
   NumberOfBuyOutDays: number;
   ExitInterviewStatus?: boolean;
   ExitInterviewDetails?: string;
-  Attachment?: string;
+  Attachment?: string | File;
   FileOriginalName?: string;
 }
 
@@ -57,7 +57,7 @@ export interface UpsertDepartmentClearanceRequest {
   ResignationId: number;
   KTStatus?: number;
   KTNotes: string;
-  Attachment: string;
+  Attachment: string | File;
   KTUsers: string;
   FileOriginalName?: string;
 }
@@ -67,7 +67,7 @@ export interface UpsertITClearanceRequest {
   AccessRevoked: boolean;
   AssetReturned: boolean;
   AssetCondition: number;
-  AttachmentUrl?: string;
+  AttachmentUrl?: string | File;
   Note?: string;
   ITClearanceCertification: boolean;
   FileOriginalName?: string;
@@ -79,7 +79,7 @@ export interface UpsertAccountClearanceRequest {
   FnFAmount?: number;
   IssueNoDueCertificate?: boolean;
   Note?: string;
-  AccountAttachment?: string;
+  AccountAttachment?: string | File;
   FileOriginalName?: string;
 }
 
@@ -137,7 +137,26 @@ export const adminExitEmployeeApi = {
    * Upsert HR Clearance
    */
   upsertHRClearance: async (data: UpsertHRClearanceRequest) => {
-    return await api.post(`${BASE_URL}/UpsertHRClearance`, data);
+    const formData = new FormData();
+    formData.append('ResignationId', data.ResignationId.toString());
+    formData.append('AdvanceBonusRecoveryAmount', data.AdvanceBonusRecoveryAmount.toString());
+    formData.append('NumberOfBuyOutDays', data.NumberOfBuyOutDays.toString());
+    
+    if (data.ServiceAgreementDetails) formData.append('ServiceAgreementDetails', data.ServiceAgreementDetails);
+    if (data.CurrentEL !== undefined) formData.append('CurrentEL', data.CurrentEL.toString());
+    if (data.ExitInterviewStatus !== undefined) formData.append('ExitInterviewStatus', data.ExitInterviewStatus ? '1' : '0');
+    if (data.ExitInterviewDetails) formData.append('ExitInterviewDetails', data.ExitInterviewDetails);
+    if (data.FileOriginalName) formData.append('FileOriginalName', data.FileOriginalName);
+    
+    if (data.Attachment instanceof File) {
+      formData.append('AttachmentFile', data.Attachment);
+    } else if (data.Attachment) {
+      formData.append('Attachment', data.Attachment);
+    }
+    
+    return await api.post(`${BASE_URL}/UpsertHRClearance`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
   },
 
   /**
@@ -151,7 +170,23 @@ export const adminExitEmployeeApi = {
    * Upsert Department Clearance
    */
   upsertDepartmentClearance: async (data: UpsertDepartmentClearanceRequest) => {
-    return await api.post(`${BASE_URL}/UpsertDepartmentClearance`, data);
+    const formData = new FormData();
+    formData.append('ResignationId', data.ResignationId.toString());
+    formData.append('KTNotes', data.KTNotes);
+    formData.append('KTUsers', data.KTUsers);
+    
+    if (data.KTStatus !== undefined) formData.append('KTStatus', data.KTStatus.toString());
+    if (data.FileOriginalName) formData.append('FileOriginalName', data.FileOriginalName);
+    
+    if (data.Attachment instanceof File) {
+      formData.append('AttachmentFile', data.Attachment);
+    } else if (data.Attachment) {
+      formData.append('Attachment', data.Attachment);
+    }
+    
+    return await api.post(`${BASE_URL}/UpsertDepartmentClearance`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
   },
 
   /**
@@ -165,7 +200,25 @@ export const adminExitEmployeeApi = {
    * Upsert IT Clearance
    */
   upsertITClearance: async (data: UpsertITClearanceRequest) => {
-    return await api.post(`${BASE_URL}/AddUpdateITClearance`, data);
+    const formData = new FormData();
+    formData.append('ResignationId', data.ResignationId.toString());
+    formData.append('AccessRevoked', data.AccessRevoked ? '1' : '0');
+    formData.append('AssetReturned', data.AssetReturned ? '1' : '0');
+    formData.append('AssetCondition', data.AssetCondition.toString());
+    formData.append('ITClearanceCertification', data.ITClearanceCertification ? '1' : '0');
+    
+    if (data.Note) formData.append('Note', data.Note);
+    if (data.FileOriginalName) formData.append('FileOriginalName', data.FileOriginalName);
+    
+    if (data.AttachmentUrl instanceof File) {
+      formData.append('AttachmentFile', data.AttachmentUrl);
+    } else if (data.AttachmentUrl) {
+      formData.append('AttachmentUrl', data.AttachmentUrl);
+    }
+    
+    return await api.post(`${BASE_URL}/AddUpdateITClearance`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
   },
 
   /**
@@ -179,6 +232,33 @@ export const adminExitEmployeeApi = {
    * Upsert Account Clearance
    */
   upsertAccountClearance: async (data: UpsertAccountClearanceRequest) => {
-    return await api.post(`${BASE_URL}/AddUpdateAccountClearance`, data);
+    const formData = new FormData();
+    formData.append('ResignationId', data.ResignationId.toString());
+    
+    if (data.FnFStatus !== undefined) formData.append('FnFStatus', data.FnFStatus ? '1' : '0');
+    if (data.FnFAmount !== undefined) formData.append('FnFAmount', data.FnFAmount.toString());
+    if (data.IssueNoDueCertificate !== undefined) formData.append('IssueNoDueCertificate', data.IssueNoDueCertificate ? '1' : '0');
+    if (data.Note) formData.append('Note', data.Note);
+    if (data.FileOriginalName) formData.append('FileOriginalName', data.FileOriginalName);
+    
+    if (data.AccountAttachment instanceof File) {
+      formData.append('AttachmentFile', data.AccountAttachment);
+    } else if (data.AccountAttachment) {
+      formData.append('AccountAttachment', data.AccountAttachment);
+    }
+    
+    return await api.post(`${BASE_URL}/AddUpdateAccountClearance`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' }
+    });
+  },
+
+  /**
+   * Get document SAS URL for viewing/downloading
+   */
+  getDocumentUrl: async (containerName: string, filename: string) => {
+    return await api.post<{ data: { url: string } }>(`${BASE_URL}/GetDocumentUrl`, {
+      ContainerName: containerName,
+      FileName: filename
+    });
   },
 };

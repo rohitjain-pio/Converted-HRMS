@@ -18,10 +18,18 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RoleSeeder::class,
             ModuleSeeder::class,
-            PermissionSeeder::class,
+            PermissionSeeder_Legacy::class,  // Use legacy permissions
             TestUserSeeder::class,
+            CountrySeeder::class,
+            CitySeeder::class,  // City data must be seeded after CountrySeeder
+            DepartmentSeeder::class,
+            DesignationSeeder::class,
+            TeamsSeeder::class,
+            QualificationSeeder::class,
             DocumentTypeSeeder::class,
             EmployerDocumentTypeSeeder::class,
+            AssetConditionSeeder::class,
+            MenuSeeder::class,
         ]);
     }
 }

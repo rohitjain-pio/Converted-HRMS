@@ -309,6 +309,7 @@ const resignationDetails = computed(() => {
     { label: 'Employee Name', value: exitDetails.value.employeeName },
     { label: 'Employee Code', value: exitDetails.value.employeeCode },
     { label: 'Department', value: exitDetails.value.departmentName },
+    { label: 'Branch', value: exitDetails.value.branchName },
     { label: 'Reporting Manager', value: exitDetails.value.reportingManagerName },
     { 
       label: 'Resignation Date', 

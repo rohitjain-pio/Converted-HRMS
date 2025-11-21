@@ -1,5 +1,5 @@
 <template>
-  <div class="profile-completeness-container">
+  <div v-if="data && data.sections" class="profile-completeness-container">
     <div class="completeness-header">
       <div class="header-content">
         <h3>Profile Completeness</h3>
@@ -19,7 +19,7 @@
                 cy="40" 
                 r="35" 
                 fill="none" 
-                :stroke="getProgressColor(data.overall_percentage)"
+                :stroke="getProgressColor(data.overall_percentage || 0)"
                 stroke-width="8"
                 stroke-linecap="round"
                 :stroke-dasharray="circumference"
@@ -29,7 +29,7 @@
               />
             </svg>
             <div class="percentage-text">
-              <span class="number">{{ Math.round(data.overall_percentage) }}</span>
+              <span class="number">{{ Math.round(data.overall_percentage || 0) }}</span>
               <span class="symbol">%</span>
             </div>
           </div>
@@ -37,10 +37,10 @@
       </div>
       
       <div class="status-message">
-        <span class="message-icon" :class="getStatusClass(data.overall_percentage)">
-          {{ getStatusIcon(data.overall_percentage) }}
+        <span class="message-icon" :class="getStatusClass(data.overall_percentage || 0)">
+          {{ getStatusIcon(data.overall_percentage || 0) }}
         </span>
-        <span class="message-text">{{ getStatusMessage(data.overall_percentage) }}</span>
+        <span class="message-text">{{ getStatusMessage(data.overall_percentage || 0) }}</span>
       </div>
     </div>
 
@@ -100,12 +100,14 @@ const props = defineProps<Props>();
 const circumference = 2 * Math.PI * 35; // 2πr where r=35
 
 const progressOffset = computed(() => {
-  const progress = props.data.overall_percentage / 100;
+  const progress = (props.data?.overall_percentage || 0) / 100;
   return circumference - (progress * circumference);
 });
 
 const incompleteSections = computed(() => {
-  const sections = props.data.sections;
+  const sections = props.data?.sections;
+  if (!sections) return [];
+  
   const incomplete: string[] = [];
   
   Object.entries(sections).forEach(([key, value]) => {

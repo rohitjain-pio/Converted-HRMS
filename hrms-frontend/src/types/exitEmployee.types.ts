@@ -3,6 +3,7 @@ export interface ExitEmployeeListItem {
   employeeCode: string;
   employeeName: string;
   departmentName: string;
+  branchName: string;
   resignationDate: string;
   lastWorkingDay: string;
   earlyReleaseRequest: boolean;
@@ -16,7 +17,6 @@ export interface ExitEmployeeListItem {
   itNoDue: boolean;
   accountsNoDue: boolean;
   reportingManagerName: string;
-  branchId: number;
 }
 
 export interface ExitEmployeeSearchFilter {
@@ -55,6 +55,7 @@ export interface ExitDetails {
   employeeCode: string;
   employeeName: string;
   departmentName: string;
+  branchName: string;
   resignationDate: string;
   lastWorkingDay: string;
   earlyReleaseDate: string | null;

@@ -597,7 +597,7 @@ class AttendanceService
                 'branch' => $branchName, // Return branch name, not ID
                 'totalHour' => $totalHour,
                 'workedHoursByDate' => $workedHoursByDate, // Dictionary with date keys and HH:MM values
-                'employeeEmail' => $employee->office_email ?? '',
+                'employeeEmail' => $employee->employmentDetail->email ?? '',
                 'isManualAttendance' => $employee->employmentDetail->is_manual_attendance ?? false
             ];
         }

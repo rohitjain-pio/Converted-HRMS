@@ -66,9 +66,12 @@ class AuthService
             return null;
         }
 
+        // Normalize email to lowercase for case-insensitive comparison
+        $email = strtolower($email);
+
         \Log::info('Looking up employee by email', ['email' => $email]);
 
-        $employmentDetail = EmploymentDetail::where('email', $email)->first();
+        $employmentDetail = EmploymentDetail::whereRaw('LOWER(email) = ?', [$email])->first();
 
         if (!$employmentDetail) {
             \Log::warning('Employment detail not found for email', ['email' => $email]);

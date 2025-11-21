@@ -194,7 +194,8 @@ class EmployeeController extends Controller
             'permanentAddress.city.state.country',
             'activeBankDetails',
             'documents.documentType',
-            'qualifications.qualification.university',
+            'qualifications.qualification',
+            'qualifications.university',
             'certificates',
             'nominees.relationship',
             'previousEmployers.references',
@@ -211,13 +212,11 @@ class EmployeeController extends Controller
         // Add profile completeness
         $employee->profile_completeness = $employee->calculateProfileCompleteness();
 
-        // Add profile picture URL with SAS token if file exists
+        // Add profile picture URL (local storage for now, Azure Blob disabled)
         if ($employee->file_name) {
-            $azureBlobService = app(\App\Services\AzureBlobService::class);
-            $employee->profile_picture_url = $azureBlobService->getFileSasUrl(
-                \App\Services\AzureBlobService::USER_DOCUMENT_CONTAINER,
-                $employee->file_name
-            );
+            // TODO: Implement local storage or Azure Blob Storage properly
+            // For now, return a placeholder or local path
+            $employee->profile_picture_url = url('/storage/profile-pictures/' . $employee->file_name);
         }
 
         return response()->json([
@@ -232,6 +231,12 @@ class EmployeeController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         try {
+            // Log incoming request
+            \Log::info('Employee Update Request', [
+                'employee_id' => $id,
+                'data' => $request->all()
+            ]);
+            
             $employee = EmployeeData::find($id);
             
             if (!$employee) {
@@ -247,34 +252,36 @@ class EmployeeController extends Controller
                 'modified_on' => now()
             ];
 
-            // Personal details
-            if ($request->has('first_name')) $updateData['first_name'] = $request->input('first_name');
-            if ($request->has('middle_name')) $updateData['middle_name'] = $request->input('middle_name');
-            if ($request->has('last_name')) $updateData['last_name'] = $request->input('last_name');
-            if ($request->has('father_name')) $updateData['father_name'] = $request->input('father_name');
-            if ($request->has('gender')) $updateData['gender'] = $request->input('gender');
-            if ($request->has('dob')) $updateData['dob'] = $request->input('dob');
-            if ($request->has('blood_group')) $updateData['blood_group'] = $request->input('blood_group');
-            if ($request->has('marital_status')) $updateData['marital_status'] = $request->input('marital_status');
-            if ($request->has('nationality')) $updateData['nationality'] = $request->input('nationality');
-            if ($request->has('phone')) $updateData['phone'] = $request->input('phone');
-            if ($request->has('alternate_phone')) $updateData['alternate_phone'] = $request->input('alternate_phone');
-            if ($request->has('personal_email')) $updateData['personal_email'] = $request->input('personal_email');
-            if ($request->has('emergency_contact_person')) $updateData['emergency_contact_person'] = $request->input('emergency_contact_person');
-            if ($request->has('emergency_contact_no')) $updateData['emergency_contact_no'] = $request->input('emergency_contact_no');
-            if ($request->has('interest')) $updateData['interest'] = $request->input('interest');
+            // Personal details - only update if value is provided and not empty
+            if ($request->filled('first_name')) $updateData['first_name'] = $request->input('first_name');
+            if ($request->has('middle_name')) $updateData['middle_name'] = $request->input('middle_name') ?: null;
+            if ($request->filled('last_name')) $updateData['last_name'] = $request->input('last_name');
+            if ($request->filled('father_name')) $updateData['father_name'] = $request->input('father_name');
+            if ($request->filled('gender')) $updateData['gender'] = $request->input('gender');
+            if ($request->filled('dob')) $updateData['dob'] = $request->input('dob');
+            if ($request->has('blood_group')) $updateData['blood_group'] = $request->input('blood_group') ?: null;
+            if ($request->filled('marital_status')) $updateData['marital_status'] = $request->input('marital_status');
+            if ($request->filled('nationality')) $updateData['nationality'] = $request->input('nationality');
+            if ($request->filled('phone')) $updateData['phone'] = $request->input('phone');
+            if ($request->has('alternate_phone')) $updateData['alternate_phone'] = $request->input('alternate_phone') ?: null;
+            if ($request->filled('personal_email')) $updateData['personal_email'] = $request->input('personal_email');
+            if ($request->has('emergency_contact_person')) $updateData['emergency_contact_person'] = $request->input('emergency_contact_person') ?: null;
+            if ($request->has('emergency_contact_no')) $updateData['emergency_contact_no'] = $request->input('emergency_contact_no') ?: null;
+            if ($request->has('interest')) $updateData['interest'] = $request->input('interest') ?: null;
 
-            // Official details
-            if ($request->has('pan_number')) $updateData['pan_number'] = $request->input('pan_number');
-            if ($request->has('adhar_number')) $updateData['adhar_number'] = $request->input('adhar_number');
-            if ($request->has('uan_no')) $updateData['uan_no'] = $request->input('uan_no');
-            if ($request->has('passport_no')) $updateData['passport_no'] = $request->input('passport_no');
-            if ($request->has('passport_expiry')) $updateData['passport_expiry'] = $request->input('passport_expiry');
+            \Log::info('Update data prepared', ['update_data' => $updateData]);
+
+            // Official details - use filled() for required fields, has() with null conversion for optional
+            if ($request->filled('pan_number')) $updateData['pan_number'] = $request->input('pan_number');
+            if ($request->filled('adhar_number')) $updateData['adhar_number'] = $request->input('adhar_number');
+            if ($request->has('uan_no')) $updateData['uan_no'] = $request->input('uan_no') ?: null;
+            if ($request->has('passport_no')) $updateData['passport_no'] = $request->input('passport_no') ?: null;
+            if ($request->has('passport_expiry')) $updateData['passport_expiry'] = $request->input('passport_expiry') ?: null;
             if ($request->has('has_pf')) $updateData['has_pf'] = $request->input('has_pf');
-            if ($request->has('pf_number')) $updateData['pf_number'] = $request->input('pf_number');
-            if ($request->has('pf_date')) $updateData['pf_date'] = $request->input('pf_date');
+            if ($request->has('pf_number')) $updateData['pf_number'] = $request->input('pf_number') ?: null;
+            if ($request->has('pf_date')) $updateData['pf_date'] = $request->input('pf_date') ?: null;
             if ($request->has('has_esi')) $updateData['has_esi'] = $request->input('has_esi');
-            if ($request->has('esi_no')) $updateData['esi_no'] = $request->input('esi_no');
+            if ($request->has('esi_no')) $updateData['esi_no'] = $request->input('esi_no') ?: null;
 
             $employee->update($updateData);
 

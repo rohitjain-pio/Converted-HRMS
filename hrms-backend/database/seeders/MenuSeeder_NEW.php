@@ -327,7 +327,7 @@ class MenuSeeder extends Seeder
         // 16. Attendance Configuration
         Menu::create([
             'menu_name' => 'Attendance Configuration',
-            'menu_path' => '/attendance/attendance-configuration',
+            'menu_path' => '/attendance/configuration',
             'parent_menu_id' => $attendance->id,
             'display_order' => 2,
             'is_active' => true,

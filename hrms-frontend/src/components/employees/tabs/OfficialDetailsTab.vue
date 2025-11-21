@@ -12,7 +12,7 @@
                   <v-text-field
                     v-model="editedData.pan_number"
                     label="PAN Number"
-                    :rules="[rules.required, rules.pan]"
+                    :rules="[rules.pan]"
                     variant="outlined"
                     density="compact"
                   />
@@ -21,7 +21,7 @@
                   <v-text-field
                     v-model="editedData.adhar_number"
                     label="Aadhaar Number"
-                    :rules="[rules.required, rules.aadhaar]"
+                    :rules="[rules.aadhaar]"
                     variant="outlined"
                     density="compact"
                   />
@@ -68,7 +68,6 @@
                     :items="[{label: 'Yes', value: 1}, {label: 'No', value: 0}]"
                     item-title="label"
                     item-value="value"
-                    :rules="[rules.required]"
                     variant="outlined"
                     density="compact"
                   />
@@ -101,7 +100,6 @@
                     :items="[{label: 'Yes', value: 1}, {label: 'No', value: 0}]"
                     item-title="label"
                     item-value="value"
-                    :rules="[rules.required]"
                     variant="outlined"
                     density="compact"
                   />
@@ -182,7 +180,7 @@
                 <v-col cols="12" md="4">
                   <div class="info-field">
                     <label>Has ESI</label>
-                    <div>{{ employee?.has_esi ? 'Yes' : 'No' }}</div>
+                    <div>{{ employee?.has_esi == 1 ? 'Yes' : 'No' }}</div>
                   </div>
                 </v-col>
                 <v-col cols="12" md="4">
@@ -202,53 +200,25 @@
         <v-card>
           <v-card-title class="section-title">Bank Details</v-card-title>
           <v-card-text>
-            <v-data-table
-              v-if="bankDetails.length"
-              :headers="bankHeaders"
-              :items="bankDetails"
-              class="elevation-1"
-            >
-              <template #item.is_active="{ item }">
-                <v-chip
-                  :color="item.is_active ? 'success' : 'default'"
-                  size="small"
-                >
-                  {{ item.is_active ? 'Active' : 'Inactive' }}
-                </v-chip>
-              </template>
-
-            </v-data-table>
-            <div v-else class="text-grey">No bank details available</div>
+            <BankDetailsForm
+              v-if="employee?.id"
+              :employee-id="employee.id"
+            />
           </v-card-text>
         </v-card>
       </v-col>
     </v-row>
-
-    <!-- Bank Form Dialog -->
-    <v-dialog v-model="showBankForm" max-width="600">
-      <v-card>
-        <v-card-title>Add Bank Account</v-card-title>
-        <v-card-text>
-          <BankDetailsForm
-            :employee-id="employee?.id"
-            @saved="onBankSaved"
-            @cancel="showBankForm = false"
-          />
-        </v-card-text>
-      </v-card>
-    </v-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, reactive } from 'vue';
-import type { Employee, BankDetails } from '@/types/employee';
+import type { Employee } from '@/types/employee';
 import { useEmployeeStore } from '@/stores/employeeStore';
 import BankDetailsForm from '../BankDetailsForm.vue';
 
 const props = defineProps<{
   employee: Employee | null;
-  bankDetails: BankDetails[];
   editMode: boolean;
 }>();
 
@@ -257,7 +227,6 @@ const emit = defineEmits<{
 }>();
 
 const employeeStore = useEmployeeStore();
-const showBankForm = ref(false);
 const officialForm = ref<any>(null);
 
 const editedData = reactive<Partial<Employee>>({
@@ -279,15 +248,6 @@ const rules = {
   aadhaar: (v: string) => !v || /^\d{12}$/.test(v.replace(/\s/g, '')) || 'Invalid Aadhaar format (12 digits)',
 };
 
-const bankHeaders = [
-  { title: 'Account Number', key: 'account_no' },
-  { title: 'Bank Name', key: 'bank_name' },
-  { title: 'Branch', key: 'branch_name' },
-  { title: 'IFSC Code', key: 'ifsc_code' },
-  { title: 'Status', key: 'is_active' },
-  { title: 'Actions', key: 'actions', sortable: false }
-];
-
 function formatDate(dateString?: string): string {
   if (!dateString) return '';
   const date = new Date(dateString);
@@ -296,31 +256,6 @@ function formatDate(dateString?: string): string {
     month: 'short',
     day: 'numeric'
   });
-}
-
-async function setActive(bankId: number) {
-  try {
-    await employeeStore.setActiveBankAccount(bankId);
-    emit('refresh');
-  } catch (error: any) {
-    alert(error.message || 'Failed to set active bank account');
-  }
-}
-
-async function deleteBank(bankId: number) {
-  if (confirm('Are you sure you want to delete this bank account?')) {
-    try {
-      await employeeStore.deleteBankDetails(bankId);
-      emit('refresh');
-    } catch (error: any) {
-      alert(error.message || 'Failed to delete bank account');
-    }
-  }
-}
-
-function onBankSaved() {
-  showBankForm.value = false;
-  emit('refresh');
 }
 
 async function validate() {
@@ -354,7 +289,7 @@ function reset() {
 }
 
 function getData() {
-  return {
+  const data = {
     pan_number: editedData.pan_number,
     adhar_number: editedData.adhar_number?.replace(/\s/g, ''),
     uan_no: editedData.uan_no,
@@ -366,6 +301,8 @@ function getData() {
     has_esi: editedData.has_esi,
     esi_no: editedData.has_esi ? editedData.esi_no : null
   };
+  console.log('OfficialDetailsTab getData() returning:', data);
+  return data;
 }
 
 // Initialize data on mount and when employee changes

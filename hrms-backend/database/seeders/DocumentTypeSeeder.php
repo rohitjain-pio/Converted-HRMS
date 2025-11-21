@@ -68,8 +68,10 @@ class DocumentTypeSeeder extends Seeder
             ],
         ];
 
-        // Clear existing data
+        // Disable foreign key checks, clear existing data, then re-enable
+        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         DB::table('document_type')->truncate();
+        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
         
         // Insert legacy document types
         DB::table('document_type')->insert($documentTypes);

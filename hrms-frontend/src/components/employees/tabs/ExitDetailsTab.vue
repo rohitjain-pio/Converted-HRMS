@@ -1,258 +1,485 @@
 <template>
-  <div class="exit-details-tab">
-    <div v-if="loading" class="loading-state">
-      <p>Loading exit details...</p>
+  <div class="exit-details-container">
+    <!-- Loading State -->
+    <div v-if="loading" class="text-center py-8">
+      <v-progress-circular indeterminate color="primary" size="64" />
+      <p class="mt-4">Loading exit details...</p>
     </div>
 
-    <div v-else-if="error" class="error-state">
-      <p class="error-message">{{ error }}</p>
+    <!-- Error State -->
+    <v-alert v-else-if="error" type="error" variant="tonal" class="ma-4">
+      {{ error }}
+    </v-alert>
+
+    <!-- Exit Details Content -->
+    <div v-else-if="exitDetails" class="pa-6">
+      <!-- Page Header -->
+      <div class="mb-6">
+        <h2 class="text-h4 font-weight-bold">Exit Details</h2>
+      </div>
+
+      <!-- Details Grid -->
+      <v-card elevation="2" class="mb-6">
+        <v-card-text class="pa-6">
+          <v-row>
+            <v-col cols="12" sm="6" md="4">
+              <div class="detail-item">
+                <div class="detail-label">Name:</div>
+                <div class="detail-value">{{ exitDetails.employeeName }}</div>
+              </div>
+            </v-col>
+            <v-col cols="12" sm="6" md="4">
+              <div class="detail-item">
+                <div class="detail-label">Department:</div>
+                <div class="detail-value">{{ exitDetails.department }}</div>
+              </div>
+            </v-col>
+            <v-col cols="12" sm="6" md="4">
+              <div class="detail-item">
+                <div class="detail-label">Reporting Manager:</div>
+                <div class="detail-value">{{ exitDetails.reportingManager }}</div>
+              </div>
+            </v-col>
+            <v-col cols="12" sm="6" md="4">
+              <div class="detail-item">
+                <div class="detail-label">Resignation Date:</div>
+                <div class="detail-value">{{ formatDate(exitDetails.resignationDate) }}</div>
+              </div>
+            </v-col>
+            <v-col cols="12" sm="6" md="4">
+              <div class="detail-item">
+                <div class="detail-label">Last Working Day:</div>
+                <div class="detail-value">{{ formatDate(exitDetails.lastWorkingDay) }}</div>
+              </div>
+            </v-col>
+            <v-col cols="12" sm="6" md="4">
+              <div class="detail-item">
+                <div class="detail-label">Resignation Reason:</div>
+                <div class="detail-value">
+                  <v-btn
+                    icon="mdi-eye"
+                    variant="text"
+                    color="primary"
+                    size="small"
+                    @click="showReasonDialog('Resignation Reason', exitDetails.reason)"
+                  />
+                </div>
+              </div>
+            </v-col>
+            <v-col cols="12" sm="6" md="4">
+              <div class="detail-item">
+                <div class="detail-label">Resignation Status:</div>
+                <div class="detail-value d-flex align-center gap-2">
+                  <span>{{ getStatusLabel(exitDetails.status) }}</span>
+                  <v-btn
+                    v-if="exitDetails.rejectResignationReason && exitDetails.status === 3"
+                    icon="mdi-eye"
+                    variant="text"
+                    color="primary"
+                    size="small"
+                    @click="showReasonDialog('Rejection Reason', exitDetails.rejectResignationReason)"
+                  />
+                </div>
+              </div>
+            </v-col>
+            <v-col v-if="exitDetails.earlyReleaseDate && exitDetails.earlyReleaseStatus" cols="12" sm="6" md="4">
+              <div class="detail-item">
+                <div class="detail-label">Early Release Request:</div>
+                <div class="detail-value d-flex align-center gap-2">
+                  <span>{{ formatDate(exitDetails.earlyReleaseDate) }} ({{ getEarlyReleaseStatusLabel(exitDetails.earlyReleaseStatus) }})</span>
+                  <v-btn
+                    v-if="exitDetails.rejectEarlyReleaseReason && exitDetails.earlyReleaseStatus === 3"
+                    icon="mdi-eye"
+                    variant="text"
+                    color="primary"
+                    size="small"
+                    @click="showReasonDialog('Early Release Rejection Reason', exitDetails.rejectEarlyReleaseReason)"
+                  />
+                </div>
+              </div>
+            </v-col>
+          </v-row>
+        </v-card-text>
+      </v-card>
+
+      <!-- Action Buttons -->
+      <div class="d-flex justify-center gap-3 mb-6">
+        <v-btn
+          v-if="showRevokeButton"
+          variant="outlined"
+          color="error"
+          @click="confirmRevokeDialog = true"
+        >
+          Revoke
+        </v-btn>
+        <v-btn
+          v-if="showEarlyReleaseButton"
+          variant="elevated"
+          color="primary"
+          @click="earlyReleaseDialog = true"
+        >
+          Request Early Release
+        </v-btn>
+      </div>
     </div>
 
-    <div v-else-if="!resignation" class="no-resignation">
-      <p>No resignation submitted yet.</p>
+    <!-- No Data State -->
+    <div v-else class="text-center py-8">
+      <v-icon size="64" color="grey">mdi-information-outline</v-icon>
+      <p class="mt-4 text-grey">No exit details found</p>
     </div>
 
-    <div v-else class="resignation-details">
-      <div class="details-section">
-        <h3>Resignation Information</h3>
-        <div class="details-grid">
-          <div class="detail-item">
-            <label>Status:</label>
-            <span class="status-badge" :class="'status-' + resignation.Status">
-              {{ getResignationStatusLabel(resignation.Status) }}
-            </span>
-          </div>
-          <div class="detail-item">
-            <label>Submission Date:</label>
-            <span>{{ formatDate(resignation.CreatedOn) }}</span>
-          </div>
-          <div class="detail-item">
-            <label>Last Working Day:</label>
-            <span>{{ formatDate(resignation.LastWorkingDay) }}</span>
-          </div>
-          <div class="detail-item">
-            <label>Reason:</label>
-            <span>{{ resignation.Reason }}</span>
-          </div>
-        </div>
-      </div>
+    <!-- Resignation Reason Dialog -->
+    <v-dialog v-model="reasonDialog" max-width="600">
+      <v-card>
+        <v-card-title class="bg-primary text-white pa-4">
+          <v-icon class="mr-2">mdi-file-document-outline</v-icon>
+          {{ reasonDialogTitle }}
+        </v-card-title>
+        <v-card-text class="pa-6">
+          <p class="text-body-1">{{ reasonDialogContent }}</p>
+        </v-card-text>
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn variant="text" @click="reasonDialog = false">Close</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
-      <div v-if="resignation.EarlyReleaseDate" class="details-section">
-        <h3>Early Release Request</h3>
-        <div class="details-grid">
-          <div class="detail-item">
-            <label>Early Release Date:</label>
-            <span>{{ formatDate(resignation.EarlyReleaseDate) }}</span>
-          </div>
-          <div class="detail-item">
-            <label>Status:</label>
-            <span class="status-badge">
-              {{ getEarlyReleaseStatusLabel(resignation.EarlyReleaseStatus) }}
-            </span>
-          </div>
-          <div v-if="resignation.RejectEarlyReleaseReason" class="detail-item full-width">
-            <label>Rejection Reason:</label>
-            <span>{{ resignation.RejectEarlyReleaseReason }}</span>
-          </div>
-        </div>
-      </div>
+    <!-- Early Release Request Dialog -->
+    <v-dialog v-model="earlyReleaseDialog" max-width="600" persistent>
+      <v-card>
+        <v-card-title class="bg-primary text-white pa-4">
+          <v-icon class="mr-2">mdi-clock-fast</v-icon>
+          Request Early Release
+        </v-card-title>
+        <v-card-text class="pa-6">
+          <v-form ref="earlyReleaseFormRef" v-model="earlyReleaseFormValid">
+            <p class="text-body-1 mb-4">
+              Request an early release if you need to leave before your scheduled last working day.
+            </p>
+            <v-text-field
+              v-model="earlyReleaseDate"
+              label="Early Release Date"
+              type="date"
+              variant="outlined"
+              :rules="earlyReleaseDateRules"
+              :max="exitDetails?.lastWorkingDay"
+            />
+          </v-form>
+        </v-card-text>
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn 
+            variant="text" 
+            @click="earlyReleaseDialog = false"
+            :disabled="submittingEarlyRelease"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            variant="elevated"
+            color="primary"
+            @click="submitEarlyRelease"
+            :loading="submittingEarlyRelease"
+            :disabled="!earlyReleaseFormValid"
+          >
+            Submit Request
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
-      <div class="details-section">
-        <h3>Clearance Status</h3>
-        <div class="clearance-grid">
-          <div class="clearance-item">
-            <label>HR Clearance:</label>
-            <span :class="clearanceClass(resignation.hrClearance)">
-              {{ formatClearanceStatus(resignation.hrClearance) }}
-            </span>
-          </div>
-          <div class="clearance-item">
-            <label>Department Clearance:</label>
-            <span :class="clearanceClass(resignation.departmentClearance)">
-              {{ formatClearanceStatus(resignation.departmentClearance) }}
-            </span>
-          </div>
-          <div class="clearance-item">
-            <label>IT Clearance:</label>
-            <span :class="clearanceClass(resignation.itClearance)">
-              {{ formatClearanceStatus(resignation.itClearance) }}
-            </span>
-          </div>
-          <div class="clearance-item">
-            <label>Accounts Clearance:</label>
-            <span :class="clearanceClass(resignation.accountClearance)">
-              {{ formatClearanceStatus(resignation.accountClearance) }}
-            </span>
-          </div>
-        </div>
-      </div>
+    <!-- Revoke Confirmation Dialog -->
+    <v-dialog v-model="confirmRevokeDialog" max-width="500">
+      <v-card>
+        <v-card-title class="text-h5 pa-4">
+          Revoke Resignation?
+        </v-card-title>
+        <v-card-text class="pa-6">
+          <p class="text-body-1">
+            Revoking your resignation will terminate the current resignation process. 
+            Please contact the HR Admin for further guidance on the next steps.
+          </p>
+        </v-card-text>
+        <v-card-actions class="pa-4">
+          <v-spacer />
+          <v-btn 
+            variant="text" 
+            @click="confirmRevokeDialog = false"
+            :disabled="revokingResignation"
+          >
+            Cancel
+          </v-btn>
+          <v-btn
+            variant="elevated"
+            color="error"
+            @click="handleRevoke"
+            :loading="revokingResignation"
+          >
+            Revoke Resignation
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
-      <div v-if="resignation.SettlementDate" class="details-section">
-        <h3>Settlement Information</h3>
-        <div class="details-grid">
-          <div class="detail-item">
-            <label>Settlement Status:</label>
-            <span>{{ resignation.SettlementStatus }}</span>
-          </div>
-          <div class="detail-item">
-            <label>Settlement Date:</label>
-            <span>{{ formatDate(resignation.SettlementDate) }}</span>
-          </div>
-        </div>
-      </div>
-    </div>
+    <!-- Snackbar -->
+    <v-snackbar v-model="snackbar" :color="snackbarColor" :timeout="3000" location="top">
+      {{ snackbarMessage }}
+    </v-snackbar>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed } from 'vue';
-import { useResignationStore } from '@/stores/resignationStore';
-import { 
-  formatDate, 
-  getResignationStatusLabel, 
-  getEarlyReleaseStatusLabel,
-  formatClearanceStatus 
-} from '@/utils/exitManagementHelpers';
+import { ref, computed, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
+import { exitEmployeeApi } from '@/api/exitEmployeeApi';
+import moment from 'moment';
 
 const props = defineProps<{
   employeeId: number;
 }>();
 
-const resignationStore = useResignationStore();
-const resignation = computed(() => resignationStore.currentResignation);
+const router = useRouter();
+
+// State
 const loading = ref(false);
 const error = ref<string | null>(null);
+const exitDetails = ref<any>(null);
+const reasonDialog = ref(false);
+const reasonDialogTitle = ref('');
+const reasonDialogContent = ref('');
+const earlyReleaseDialog = ref(false);
+const earlyReleaseDate = ref('');
+const earlyReleaseFormValid = ref(false);
+const earlyReleaseFormRef = ref();
+const submittingEarlyRelease = ref(false);
+const confirmRevokeDialog = ref(false);
+const revokingResignation = ref(false);
+const snackbar = ref(false);
+const snackbarMessage = ref('');
+const snackbarColor = ref('success');
 
-const clearanceClass = (clearance: any) => {
-  return clearance ? 'clearance-completed' : 'clearance-pending';
+// Constants for status labels
+const RESIGNATION_STATUS_LABELS: Record<number, string> = {
+  1: 'Pending',
+  2: 'Accepted',
+  3: 'Rejected',
+  4: 'Revoked',
+  5: 'Completed',
 };
 
-onMounted(async () => {
+const EARLY_RELEASE_STATUS_LABELS: Record<number, string> = {
+  1: 'Pending',
+  2: 'Accepted',
+  3: 'Rejected',
+};
+
+// Validation rules
+const earlyReleaseDateRules = [
+  (v: string) => !!v || 'Date is required',
+  (v: string) => {
+    if (!v || !exitDetails.value?.lastWorkingDay) return true;
+    return moment(v).isBefore(moment(exitDetails.value.lastWorkingDay)) || 'Date must be before last working day';
+  },
+];
+
+// Computed properties
+const showRevokeButton = computed(() => {
+  console.log('🔍 Computing showRevokeButton...');
+  console.log('  exitDetails.value:', exitDetails.value);
+  
+  if (!exitDetails.value) {
+    console.log('  ❌ No exitDetails');
+    return false;
+  }
+  
+  const status = exitDetails.value.status;
+  const lastWorkingDay = exitDetails.value.lastWorkingDay;
+  
+  console.log('  Status:', status, '(should be 1 or 2)');
+  console.log('  Last Working Day:', lastWorkingDay);
+  console.log('  Is future date?', moment(lastWorkingDay).isSameOrAfter(moment(), 'day'));
+  
+  // Show revoke if status is pending (1) or accepted (2) and last working day is in future
+  const shouldShow = (status === 1 || status === 2) && 
+         moment(lastWorkingDay).isSameOrAfter(moment(), 'day');
+         
+  console.log('  ✅ Result:', shouldShow);
+  return shouldShow;
+});
+
+const showEarlyReleaseButton = computed(() => {
+  console.log('🔍 Computing showEarlyReleaseButton...');
+  console.log('  exitDetails.value:', exitDetails.value);
+  
+  if (!exitDetails.value) {
+    console.log('  ❌ No exitDetails');
+    return false;
+  }
+  
+  console.log('  Status:', exitDetails.value.status, '(should be 2)');
+  console.log('  Early Release Date:', exitDetails.value.earlyReleaseDate);
+  console.log('  Early Release Status:', exitDetails.value.earlyReleaseStatus);
+  
+  const shouldShow = exitDetails.value.status === 2 && 
+         !exitDetails.value.earlyReleaseDate && 
+         !exitDetails.value.earlyReleaseStatus;
+         
+  console.log('  ✅ Result:', shouldShow);
+  return shouldShow;
+});
+
+// Methods
+const formatDate = (date: string | null | undefined) => {
+  if (!date) return 'N/A';
+  return moment(date).format('MMM Do, YYYY');
+};
+
+const getStatusLabel = (status: number) => {
+  return RESIGNATION_STATUS_LABELS[status] || 'Unknown';
+};
+
+const getEarlyReleaseStatusLabel = (status: number) => {
+  return EARLY_RELEASE_STATUS_LABELS[status] || 'Unknown';
+};
+
+const showReasonDialog = (title: string, content: string) => {
+  reasonDialogTitle.value = title;
+  reasonDialogContent.value = content;
+  reasonDialog.value = true;
+};
+
+const fetchExitDetails = async () => {
   loading.value = true;
   error.value = null;
-  
+
   try {
-    const existsData = await resignationStore.checkResignationExists(props.employeeId);
-    if (existsData.Exists && existsData.ResignationId) {
-      await resignationStore.fetchResignation(existsData.ResignationId);
+    // First check if resignation exists and get resignation ID
+    const existsResponse = await exitEmployeeApi.isResignationExist(props.employeeId);
+    
+    if (existsResponse.data.StatusCode === 200) {
+      const resignationData = existsResponse.data.Data;
+      
+      if (!resignationData.Exists || !resignationData.ResignationId) {
+        exitDetails.value = null;
+        loading.value = false;
+        return;
+      }
+
+      // Now fetch full resignation details using resignation ID
+      const detailsResponse = await exitEmployeeApi.getResignationDetails(resignationData.ResignationId);
+      
+      if (detailsResponse.data.StatusCode === 200 && detailsResponse.data.Data) {
+        exitDetails.value = detailsResponse.data.Data;
+        console.log('📋 Exit Details Loaded:', exitDetails.value);
+        console.log('🔘 Status:', exitDetails.value.status);
+        console.log('📅 Last Working Day:', exitDetails.value.lastWorkingDay);
+        console.log('🔲 Show Revoke Button:', showRevokeButton.value);
+        console.log('🔲 Show Early Release Button:', showEarlyReleaseButton.value);
+      } else {
+        error.value = detailsResponse.data.Message || 'Failed to load exit details';
+      }
+    } else {
+      error.value = existsResponse.data.Message || 'Failed to check resignation status';
     }
   } catch (err: any) {
-    error.value = err.message || 'Failed to load resignation details';
+    console.error('Error fetching exit details:', err);
+    error.value = err.response?.data?.Message || err.message || 'Failed to load exit details';
   } finally {
     loading.value = false;
   }
+};
+
+const submitEarlyRelease = async () => {
+  if (!earlyReleaseFormRef.value?.validate() || !exitDetails.value?.id) return;
+
+  submittingEarlyRelease.value = true;
+
+  try {
+    const response = await exitEmployeeApi.requestEarlyRelease({
+      ResignationId: exitDetails.value.id,
+      EarlyReleaseDate: earlyReleaseDate.value
+    });
+
+    if (response.data.StatusCode === 200) {
+      snackbarMessage.value = 'Early release request submitted successfully';
+      snackbarColor.value = 'success';
+      snackbar.value = true;
+      earlyReleaseDialog.value = false;
+      earlyReleaseDate.value = '';
+      
+      // Refresh data
+      await fetchExitDetails();
+    } else {
+      throw new Error(response.data.Message || 'Failed to submit request');
+    }
+  } catch (err: any) {
+    snackbarMessage.value = err.response?.data?.Message || err.message || 'Failed to submit early release request';
+    snackbarColor.value = 'error';
+    snackbar.value = true;
+  } finally {
+    submittingEarlyRelease.value = false;
+  }
+};
+
+const handleRevoke = async () => {
+  if (!exitDetails.value?.id) return;
+
+  revokingResignation.value = true;
+
+  try {
+    const response = await exitEmployeeApi.revokeResignation(exitDetails.value.id);
+
+    if (response.data.StatusCode === 200) {
+      snackbarMessage.value = 'Resignation revoked successfully';
+      snackbarColor.value = 'success';
+      snackbar.value = true;
+      confirmRevokeDialog.value = false;
+
+      // Navigate to personal details tab
+      setTimeout(() => {
+        router.push('/profile?tab=personal');
+      }, 1500);
+    } else {
+      throw new Error(response.data.Message || 'Failed to revoke resignation');
+    }
+  } catch (err: any) {
+    snackbarMessage.value = err.response?.data?.Message || err.message || 'Failed to revoke resignation';
+    snackbarColor.value = 'error';
+    snackbar.value = true;
+  } finally {
+    revokingResignation.value = false;
+  }
+};
+
+onMounted(() => {
+  fetchExitDetails();
 });
 </script>
 
 <style scoped>
-.exit-details-tab {
-  padding: 20px;
+.exit-details-container {
+  min-height: 400px;
 }
 
-.loading-state,
-.error-state,
-.no-resignation {
-  text-align: center;
-  padding: 40px;
-  color: #666;
-}
-
-.error-message {
-  color: #dc3545;
-}
-
-.resignation-details {
-  max-width: 1200px;
-}
-
-.details-section {
-  background: #fff;
-  border: 1px solid #e0e0e0;
-  border-radius: 8px;
-  padding: 20px;
-  margin-bottom: 20px;
-}
-
-.details-section h3 {
-  margin-top: 0;
+.detail-item {
   margin-bottom: 16px;
-  font-size: 18px;
-  font-weight: 600;
-  color: #333;
 }
 
-.details-grid,
-.clearance-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 16px;
-}
-
-.detail-item,
-.clearance-item {
-  display: flex;
-  flex-direction: column;
-}
-
-.detail-item.full-width {
-  grid-column: 1 / -1;
-}
-
-.detail-item label,
-.clearance-item label {
-  font-weight: 600;
-  color: #555;
+.detail-label {
+  font-weight: 700;
+  font-size: 14px;
+  color: #666;
   margin-bottom: 4px;
-  font-size: 14px;
 }
 
-.detail-item span,
-.clearance-item span {
+.detail-value {
+  font-size: 16px;
   color: #333;
-  font-size: 14px;
 }
 
-.status-badge {
-  display: inline-block;
-  padding: 4px 12px;
-  border-radius: 12px;
-  font-size: 12px;
-  font-weight: 600;
-  width: fit-content;
-}
-
-.status-badge.status-1 {
-  background-color: #fff3cd;
-  color: #856404;
-}
-
-.status-badge.status-2 {
-  background-color: #d4edda;
-  color: #155724;
-}
-
-.status-badge.status-3 {
-  background-color: #f8d7da;
-  color: #721c24;
-}
-
-.status-badge.status-4 {
-  background-color: #e2e3e5;
-  color: #383d41;
-}
-
-.status-badge.status-5 {
-  background-color: #d1ecf1;
-  color: #0c5460;
-}
-
-.clearance-completed {
-  color: #28a745;
-  font-weight: 600;
-}
-
-.clearance-pending {
-  color: #ffc107;
-  font-weight: 600;
+.gap-3 {
+  gap: 12px;
 }
 </style>

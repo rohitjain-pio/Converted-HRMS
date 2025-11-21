@@ -16,7 +16,9 @@ class Role extends Model
         'name',
         'is_active',
         'created_by',
-        'modified_by'
+        'created_on',
+        'modified_by',
+        'modified_on',
     ];
 
     protected $casts = [

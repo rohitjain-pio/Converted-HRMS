@@ -105,9 +105,21 @@ class AzureBlobService
      * Generate SAS URL for file access
      * Legacy: BlobStorageClient.GetFileSasUrl
      * Returns a URL valid for 7 days
+     * 
+     * DISABLED: Azure Blob Storage SAS token generation disabled for now
+     * TODO: Implement proper Azure Blob Storage or use local storage
      */
     public function getFileSasUrl(string $containerName, string $fileName): ?string
     {
+        // Temporarily disabled - return null to prevent errors
+        // TODO: Implement proper Azure Blob Storage SAS token generation
+        Log::warning('Azure Blob SAS token generation is disabled', [
+            'container' => $containerName,
+            'file' => $fileName
+        ]);
+        return null;
+        
+        /* COMMENTED OUT - OLD IMPLEMENTATION WITH SDK ISSUES
         try {
             if (!$this->blobClient) {
                 return null;
@@ -135,6 +147,7 @@ class AzureBlobService
             Log::error('Azure Blob SAS generation failed: ' . $e->getMessage());
             return null;
         }
+        */
     }
 
     /**

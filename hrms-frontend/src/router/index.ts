@@ -35,6 +35,17 @@ const routes: RouteRecordRaw[] = [
     },
   },
 
+  // Profile Routes (uses EmployeeDetailsComplete for own profile and viewing others)
+  {
+    path: '/profile',
+    name: 'Profile',
+    component: () => import('@/views/profile/ProfileView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'My Profile',
+    },
+  },
+
   // Attendance Management Routes (Module-3)
   {
     path: '/attendance/my-attendance',
@@ -46,6 +57,37 @@ const routes: RouteRecordRaw[] = [
       },
     },
 
+  // Role Management Routes
+  {
+    path: '/roles',
+    name: 'RoleList',
+    component: () => import('@/views/roles/RoleListView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Roles',
+      permissions: ['Read.Role'],
+    },
+  },
+  {
+    path: '/roles/add',
+    name: 'RoleAdd',
+    component: () => import('@/views/roles/RoleFormView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Create Role',
+      permissions: ['Create.Role'],
+    },
+  },
+  {
+    path: '/roles/edit/:id',
+    name: 'RoleEdit',
+    component: () => import('@/views/roles/RoleFormView.vue'),
+    meta: {
+      requiresAuth: true,
+      title: 'Edit Role',
+      permissions: ['Edit.Role'],
+    },
+  },
 
   // Exit Management Routes (Legacy-aligned)
   {
@@ -75,9 +117,11 @@ const routes: RouteRecordRaw[] = [
     meta: {
       requiresAuth: true,
       title: 'Resignation Form',
-      permissions: ['Initiate.Exit'],
+      permissions: ['Create.Resignation'],
     },
   },
+
+  // Resignation is now part of Profile page tabs (Exit Details tab)
   {
     path: '/attendance/employee-report',
     name: 'AttendanceReport',

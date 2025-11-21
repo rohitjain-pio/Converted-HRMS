@@ -45,7 +45,11 @@ return [
     |
     */
     'azure' => [
-        'storage_connection_string' => env('AZURE_STORAGE_CONNECTION_STRING'),
+        'storage' => [
+            'connection_string' => env('AZURE_STORAGE_CONNECTION_STRING'),
+            'url' => env('AZURE_BLOB_STORAGE_URL', 'https://devstoragehrms.blob.core.windows.net'),
+            'container' => 'user-documents',
+        ],
     ],
 
     /*
